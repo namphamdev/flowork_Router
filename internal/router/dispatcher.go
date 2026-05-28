@@ -36,6 +36,30 @@ type OpenAIRequest struct {
 	// converted to Anthropic `tools`/`tool_choice` for anthropic upstreams.
 	Tools      json.RawMessage `json:"tools,omitempty"`
 	ToolChoice json.RawMessage `json:"tool_choice,omitempty"`
+
+	// Additional OpenAI-spec parameters preserved through the dispatcher so
+	// caller intent isn't dropped on the way to the upstream. All are
+	// omitempty / json.RawMessage so a request that doesn't set them looks
+	// identical on the wire.
+	TopK               int             `json:"top_k,omitempty"`
+	MaxCompletionTok   int             `json:"max_completion_tokens,omitempty"`
+	Thinking           json.RawMessage `json:"thinking,omitempty"`
+	Reasoning          json.RawMessage `json:"reasoning,omitempty"`
+	EnableThinking     *bool           `json:"enable_thinking,omitempty"`
+	PresencePenalty    float64         `json:"presence_penalty,omitempty"`
+	FrequencyPenalty   float64         `json:"frequency_penalty,omitempty"`
+	Seed               *int64          `json:"seed,omitempty"`
+	Stop               json.RawMessage `json:"stop,omitempty"`
+	ResponseFormat     json.RawMessage `json:"response_format,omitempty"`
+	Prediction         json.RawMessage `json:"prediction,omitempty"`
+	Store              *bool           `json:"store,omitempty"`
+	Metadata           json.RawMessage `json:"metadata,omitempty"`
+	N                  int             `json:"n,omitempty"`
+	Logprobs           *bool           `json:"logprobs,omitempty"`
+	TopLogprobs        *int            `json:"top_logprobs,omitempty"`
+	LogitBias          json.RawMessage `json:"logit_bias,omitempty"`
+	User               string          `json:"user,omitempty"`
+	ParallelToolCalls  *bool           `json:"parallel_tool_calls,omitempty"`
 }
 
 type OpenAIMessage struct {
