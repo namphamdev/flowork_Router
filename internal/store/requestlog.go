@@ -144,16 +144,18 @@ func ListRecent(d *sql.DB, limit int, providerFilter, statusFilter string) ([]Lo
 	if len(out) > 0 {
 		names := map[string]string{}
 		if prows, perr := d.Query(`SELECT id, provider, name FROM providerConnections`); perr == nil {
-			for prows.Next() {
-				var id, ptype, name string
-				if prows.Scan(&id, &ptype, &name) == nil {
-					if name == "" {
-						name = ptype
+			func() {
+				defer prows.Close()
+				for prows.Next() {
+					var id, ptype, name string
+					if prows.Scan(&id, &ptype, &name) == nil {
+						if name == "" {
+							name = ptype
+						}
+						names[id] = name
 					}
-					names[id] = name
 				}
-			}
-			prows.Close()
+			}()
 		}
 		for i := range out {
 			if n := names[out[i].ProviderID]; n != "" {

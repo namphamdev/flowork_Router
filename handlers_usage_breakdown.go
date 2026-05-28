@@ -324,29 +324,37 @@ func usageStreamHandler(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				continue
 			}
-			anyEmitted := false
-			for rows.Next() {
-				var id int
-				var ts, provider, model, apiKey, status string
-				var prompt, compl int
-				var cost float64
-				var lat int
-				if err := rows.Scan(&id, &ts, &provider, &model, &apiKey, &prompt, &compl, &cost, &lat, &status); err != nil {
-					continue
-				}
-				if id > lastID {
-					lastID = id
-				}
-				fmt.Fprintf(w, "event: usage\ndata: {\"id\":%d,\"ts\":%q,\"provider\":%q,\"model\":%q,\"promptTokens\":%d,\"completionTokens\":%d,\"costUsd\":%v,\"latencyMs\":%d,\"status\":%q}\n\n",
-					id, ts, provider, model, prompt, compl, cost, lat, status)
-				anyEmitted = true
-			}
-			rows.Close()
+			anyEmitted := streamUsageHistoryRows(w, rows, &lastID)
 			if anyEmitted {
 				flusher.Flush()
 			}
 		}
 	}
+}
+
+// streamUsageHistoryRows drains rows into SSE events; defer ensures rows are
+// always released even if Fprintf panics on a closed connection.
+func streamUsageHistoryRows(w http.ResponseWriter, rows *sql.Rows, lastID *int) bool {
+	defer rows.Close()
+	anyEmitted := false
+	for rows.Next() {
+		var id int
+		var ts, provider, model, apiKey, status string
+		var prompt, compl int
+		var cost float64
+		var lat int
+		if err := rows.Scan(&id, &ts, &provider, &model, &apiKey, &prompt, &compl, &cost, &lat, &status); err != nil {
+			continue
+		}
+		if id > *lastID {
+			*lastID = id
+		}
+		fmt.Fprintf(w, "event: usage\ndata: {\"id\":%d,\"ts\":%q,\"provider\":%q,\"model\":%q,\"promptTokens\":%d,\"completionTokens\":%d,\"costUsd\":%v,\"latencyMs\":%d,\"status\":%q}\n\n",
+			id, ts, provider, model, prompt, compl, cost, lat, status)
+		_ = apiKey
+		anyEmitted = true
+	}
+	return anyEmitted
 }
 
 // usageByConnectionHandler — GET /api/usage/{providerConnectionId} summary.

@@ -55,6 +55,7 @@ func applyMigrations(d *sql.DB) error {
 	if err != nil {
 		return fmt.Errorf("query schemaMigrations: %w", err)
 	}
+	defer rows.Close()
 	for rows.Next() {
 		var id int
 		if err := rows.Scan(&id); err == nil {
@@ -119,6 +120,7 @@ func ListMigrationStatus(d *sql.DB) ([]MigrationStatus, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	for rows.Next() {
 		var id int
 		var at string
