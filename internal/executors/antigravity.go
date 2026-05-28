@@ -36,9 +36,16 @@ func (a *antigravityExecutor) headers(p *store.ProviderConnection, stream bool) 
 	if tok, ok := p.Data[store.CfgAPIKey].(string); ok && tok != "" {
 		h["Authorization"] = "Bearer " + tok
 	}
-	if sid, ok := p.Data["sessionId"].(string); ok && sid != "" {
-		h["X-Machine-Session-Id"] = sid
+	// X-Machine-Session-Id scopes Antigravity's prompt cache. The native
+	// binary mints one id per launch and keeps it for the process lifetime.
+	// We replicate that — stable per provider.ID within a single router
+	// run, fresh on every restart — so prompt-cache continuity works.
+	// Explicit sessionId on the provider record still wins.
+	sid, _ := p.Data["sessionId"].(string)
+	if sid == "" {
+		sid = DeriveAntigravitySessionID(p.ID)
 	}
+	h["X-Machine-Session-Id"] = sid
 	if stream {
 		h["Accept"] = "text/event-stream"
 	} else {
