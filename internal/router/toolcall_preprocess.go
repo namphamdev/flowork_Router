@@ -30,6 +30,7 @@ func preprocessToolCalls(req *OpenAIRequest) {
 	}
 	helpers.EnsureToolCallIDs(body)
 	helpers.FixMissingToolResponses(body)
+	normalizeThinkingConfig(body)
 
 	// Lift mutations back into the typed struct.
 	patched, err := json.Marshal(body)
