@@ -31,11 +31,7 @@ func ClaudeToOpenAI(body map[string]any) map[string]any {
 	}
 
 	usageIn, _ := body["usage"].(map[string]any)
-	usage := map[string]any{
-		"prompt_tokens":     int64Of(usageIn["input_tokens"]),
-		"completion_tokens": int64Of(usageIn["output_tokens"]),
-	}
-	usage["total_tokens"] = usage["prompt_tokens"].(int64) + usage["completion_tokens"].(int64)
+	usage := buildOpenAIUsageFromAnthropic(usageIn)
 
 	return map[string]any{
 		"id":      id,
@@ -48,6 +44,52 @@ func ClaudeToOpenAI(body map[string]any) map[string]any {
 		}},
 		"usage": usage,
 	}
+}
+
+// buildOpenAIUsageFromAnthropic translates an Anthropic usage block into the
+// OpenAI shape, preserving prompt-cache breakdowns:
+//
+//	prompt_tokens     = input_tokens + cache_read_input_tokens + cache_creation_input_tokens
+//	completion_tokens = output_tokens
+//	total_tokens      = prompt_tokens + completion_tokens
+//
+// When cache_read or cache_creation are non-zero, they are exposed under
+//
+//	prompt_tokens_details.cached_tokens          (read hits)
+//	prompt_tokens_details.cache_creation_tokens  (writes)
+//
+// matching the breakdown OpenAI uses for its own cache reporting. The raw
+// Anthropic fields are also surfaced verbatim so observability tooling that
+// reads "input_tokens" / "output_tokens" keeps working.
+func buildOpenAIUsageFromAnthropic(usageIn map[string]any) map[string]any {
+	input := int64Of(usageIn["input_tokens"])
+	output := int64Of(usageIn["output_tokens"])
+	cacheRead := int64Of(usageIn["cache_read_input_tokens"])
+	cacheCreate := int64Of(usageIn["cache_creation_input_tokens"])
+
+	prompt := input + cacheRead + cacheCreate
+	usage := map[string]any{
+		"prompt_tokens":     prompt,
+		"completion_tokens": output,
+		"total_tokens":      prompt + output,
+		// Anthropic-native passthrough for callers that prefer the original
+		// shape (e.g. log filters that already key on these names).
+		"input_tokens":  input,
+		"output_tokens": output,
+	}
+	if cacheRead > 0 || cacheCreate > 0 {
+		details := map[string]any{}
+		if cacheRead > 0 {
+			details["cached_tokens"] = cacheRead
+			usage["cache_read_input_tokens"] = cacheRead
+		}
+		if cacheCreate > 0 {
+			details["cache_creation_tokens"] = cacheCreate
+			usage["cache_creation_input_tokens"] = cacheCreate
+		}
+		usage["prompt_tokens_details"] = details
+	}
+	return usage
 }
 
 func mapAnthropicStop(s string) string {

@@ -66,6 +66,17 @@ type OpenAIUsage struct {
 	PromptTokens     int `json:"prompt_tokens"`
 	CompletionTokens int `json:"completion_tokens"`
 	TotalTokens      int `json:"total_tokens"`
+	// Prompt-cache breakdown (Anthropic-style). Populated when a response
+	// carries cache_read_input_tokens / cache_creation_input_tokens so the
+	// router can log per-request cache savings.
+	PromptTokensDetails *OpenAIPromptTokensDetails `json:"prompt_tokens_details,omitempty"`
+}
+
+// OpenAIPromptTokensDetails mirrors the OpenAI usage breakdown for cache
+// reporting. Cached = read hits; CacheCreation = writes.
+type OpenAIPromptTokensDetails struct {
+	CachedTokens        int `json:"cached_tokens,omitempty"`
+	CacheCreationTokens int `json:"cache_creation_tokens,omitempty"`
 }
 
 // ── Anthropic shape (subset) ───────────────────────────────────────────
