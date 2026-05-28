@@ -2,9 +2,25 @@
 package handlers
 
 import (
+	"errors"
 	"io"
 	"net/http"
+	"time"
 )
+
+// maxRerouteBody — hard cap on request body size we will buffer before
+// forwarding to the local router. Anything above this is rejected with 413.
+// Sized for typical chat payloads (50 MiB covers very large prompt + tool
+// histories) but stops a runaway client from exhausting RAM by streaming
+// gigabytes into io.ReadAll.
+const maxRerouteBody = 50 << 20
+
+// rerouteClient — explicit timeout instead of relying on r.Context() alone.
+// The local router runs on the loopback so request latency is bounded by
+// upstream provider behaviour, not network distance; 10 minutes is enough
+// for the slowest streaming completion and short enough to fail closed if
+// the loopback dispatcher hangs.
+var rerouteClient = &http.Client{Timeout: 10 * time.Minute}
 
 func init() { Register(&antigravityHandler{}) }
 
@@ -23,21 +39,30 @@ func (a *antigravityHandler) Handle(w http.ResponseWriter, r *http.Request) {
 // rerouteToRouter is shared by all per-IDE handlers — write the original body
 // through to the local router (which the MITM server runs alongside).
 func rerouteToRouter(w http.ResponseWriter, r *http.Request, routerPath string) {
-	body, _ := io.ReadAll(r.Body)
 	defer r.Body.Close()
+	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxRerouteBody))
+	if err != nil {
+		var mb *http.MaxBytesError
+		if errors.As(err, &mb) {
+			http.Error(w, "request body exceeds limit", http.StatusRequestEntityTooLarge)
+			return
+		}
+		http.Error(w, "read request body", http.StatusBadRequest)
+		return
+	}
 
 	// Build a new request hitting flow_router on 127.0.0.1:2402.
 	target := "http://127.0.0.1:2402" + routerPath
 	req, err := http.NewRequestWithContext(r.Context(), r.Method, target, copyReader(body))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "build reroute request", http.StatusInternalServerError)
 		return
 	}
 	req.Header = r.Header.Clone()
 	req.Header.Del("Host")
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := rerouteClient.Do(req)
 	if err != nil {
-		http.Error(w, "upstream: "+err.Error(), http.StatusBadGateway)
+		http.Error(w, "upstream unreachable", http.StatusBadGateway)
 		return
 	}
 	defer resp.Body.Close()
