@@ -17,6 +17,7 @@ import (
 	"github.com/flowork-os/flowork_Router/internal/creds"
 	"github.com/flowork-os/flowork_Router/internal/executors"
 	"github.com/flowork-os/flowork_Router/internal/providercompat"
+	"github.com/flowork-os/flowork_Router/internal/safego"
 	"github.com/flowork-os/flowork_Router/internal/store"
 )
 
@@ -297,7 +298,9 @@ func dispatchSingleModel(ctx context.Context, d *sql.DB, req OpenAIRequest, sett
 		latencyMs := time.Since(start).Milliseconds()
 
 		// Log to usageHistory (best-effort, non-blocking)
-		go logUsage(d, keyID, p.ID, req.Model, resp, status, err, latencyMs)
+		safego.GoLabel("logUsage", func() {
+			logUsage(d, keyID, p.ID, req.Model, resp, status, err, latencyMs)
+		})
 
 		if err == nil && resp != nil {
 			log.Printf("flow_router dispatch model=%s → provider=%s latency=%dms tokens=%d",

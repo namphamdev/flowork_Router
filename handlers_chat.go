@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/flowork-os/flowork_Router/internal/router"
+	"github.com/flowork-os/flowork_Router/internal/safego"
 	"github.com/flowork-os/flowork_Router/internal/store"
 )
 
@@ -78,7 +79,9 @@ func captureMITM(model string, r *http.Request, reqBody []byte, status int, errM
 	if !MITMCaptureEnabled() {
 		return
 	}
-	go recordMITMRequest("", model, r.RemoteAddr, r.UserAgent(), reqBody, status, errMsg, durationMs, respBody)
+	safego.GoLabel("captureMITM", func() {
+		recordMITMRequest("", model, r.RemoteAddr, r.UserAgent(), reqBody, status, errMsg, durationMs, respBody)
+	})
 }
 
 // modelsHandler — aggregate semua models dari active providers (OpenAI shape).

@@ -17,6 +17,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/flowork-os/flowork_Router/internal/safego"
 	"github.com/flowork-os/flowork_Router/internal/store"
 )
 
@@ -96,9 +97,9 @@ func tunnelEnableHandler(w http.ResponseWriter, r *http.Request) {
 	cloudflaredCmd = cmd
 
 	urlCh := make(chan string, 1)
-	go scanCloudflaredOutput(stdoutPipe, urlCh)
-	go scanCloudflaredOutput(stderrPipe, urlCh)
-	go func() {
+	safego.GoLabel("cloudflared-stdout", func() { scanCloudflaredOutput(stdoutPipe, urlCh) })
+	safego.GoLabel("cloudflared-stderr", func() { scanCloudflaredOutput(stderrPipe, urlCh) })
+	safego.GoLabel("cloudflared-wait", func() {
 		_ = cmd.Wait()
 		cloudflaredMu.Lock()
 		cloudflaredCmd = nil
@@ -109,7 +110,7 @@ func tunnelEnableHandler(w http.ResponseWriter, r *http.Request) {
 		st.CloudflareURL = ""
 		st.CloudflarePID = 0
 		_ = store.SaveTunnelState(d, st)
-	}()
+	})
 
 	d, _ := store.Open()
 	st, _ := store.LoadTunnelState(d)
