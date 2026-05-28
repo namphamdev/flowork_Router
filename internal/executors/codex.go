@@ -3,6 +3,7 @@ package executors
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -42,8 +43,33 @@ func (c *codexExecutor) headers(p *store.ProviderConnection) map[string]string {
 	return h
 }
 
+// buildBody wraps the standard MarshalRequest output with Codex-specific
+// fields: default `instructions` system prompt (when the caller didn't
+// supply one) + `store: false` (Codex requirement, anything else is
+// rejected). Returns the patched JSON.
+func (c *codexExecutor) buildBody(req Request) []byte {
+	raw := MarshalRequest(req)
+	var body map[string]any
+	if err := json.Unmarshal(raw, &body); err != nil {
+		// Fall back to the raw shape — better to ship something than nothing.
+		return raw
+	}
+	// Inject default instructions only when empty / missing.
+	current, _ := body["instructions"].(string)
+	if current == "" {
+		body["instructions"] = CodexDefaultInstructions
+	}
+	// Codex API hard-requires store=false.
+	body["store"] = false
+	out, err := json.Marshal(body)
+	if err != nil {
+		return raw
+	}
+	return out
+}
+
 func (c *codexExecutor) Stream(ctx context.Context, p *store.ProviderConnection, req Request, w http.ResponseWriter, flusher http.Flusher) (Usage, int, error) {
-	body := MarshalRequest(req)
+	body := c.buildBody(req)
 	httpReq, err := BuildRequest(ctx, http.MethodPost, c.endpoint(p), body, c.headers(p))
 	if err != nil {
 		return Usage{}, 0, fmt.Errorf("build req: %w", err)
@@ -53,7 +79,7 @@ func (c *codexExecutor) Stream(ctx context.Context, p *store.ProviderConnection,
 
 func (c *codexExecutor) NonStream(ctx context.Context, p *store.ProviderConnection, req Request) ([]byte, Usage, int, error) {
 	req.Stream = false
-	body := MarshalRequest(req)
+	body := c.buildBody(req)
 	httpReq, err := BuildRequest(ctx, http.MethodPost, c.endpoint(p), body, c.headers(p))
 	if err != nil {
 		return nil, Usage{}, 0, fmt.Errorf("build req: %w", err)
