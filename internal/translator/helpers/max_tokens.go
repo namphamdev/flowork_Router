@@ -51,3 +51,34 @@ func ResolveMaxTokens(explicit int, model string) int {
 	}
 	return MaxTokensForModel(model)
 }
+
+// MinMaxTokensWithTools is the floor we enforce when a request carries tool
+// definitions — too low a cap causes Anthropic to truncate function-call
+// arguments mid-stream.
+const MinMaxTokensWithTools = 32000
+
+// AdjustMaxTokens fine-tunes a candidate max_tokens value based on the
+// request shape:
+//
+//  1. When hasTools=true (request carries function/tool definitions), the
+//     cap is lifted to at least MinMaxTokensWithTools so streamed argument
+//     JSON never gets truncated mid-call.
+//  2. When thinkingBudget>0, the Anthropic API requires max_tokens strictly
+//     greater than budget. If the candidate is ≤ budget we bump it to
+//     budget + 1024 so the model has headroom for the actual reply after
+//     spending the thinking budget.
+//
+// maxTokens=0 means "no explicit value" — falls back to DefaultMaxTokens
+// before adjustments apply.
+func AdjustMaxTokens(maxTokens int, hasTools bool, thinkingBudget int) int {
+	if maxTokens <= 0 {
+		maxTokens = DefaultMaxTokens
+	}
+	if hasTools && maxTokens < MinMaxTokensWithTools {
+		maxTokens = MinMaxTokensWithTools
+	}
+	if thinkingBudget > 0 && maxTokens <= thinkingBudget {
+		maxTokens = thinkingBudget + 1024
+	}
+	return maxTokens
+}
