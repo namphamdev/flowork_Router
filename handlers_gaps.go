@@ -237,6 +237,34 @@ func v1IndexHandler(w http.ResponseWriter, r *http.Request) {
 
 // ── TTS voices ─────────────────────────────────────────────────────────────
 
+// tryFetchVoicesUpstream proxies /audio/voices from one provider. Returns
+// true when a 200 response was written to w (caller should stop iterating).
+// The HTTP context lives until the function returns, so the streaming body
+// read in copyBody never races a premature cancel.
+func tryFetchVoicesUpstream(parentCtx context.Context, w http.ResponseWriter, endpoint, apiKey string) bool {
+	ctx, cancel := context.WithTimeout(parentCtx, 8*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return false
+	}
+	if apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+apiKey)
+	}
+	resp, err := mediaHTTPClient.Do(req)
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return false
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, _ = copyBody(w, resp)
+	return true
+}
+
 // ttsVoicesHandler — GET voices from the active TTS provider (proxy /audio/voices),
 // else a small built-in default set.
 func ttsVoicesHandler(w http.ResponseWriter, r *http.Request) {
@@ -247,22 +275,11 @@ func ttsVoicesHandler(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		endpoint := strings.TrimRight(providers[i].BaseURL, "/") + "/audio/voices"
-		ctx, cancel := context.WithTimeout(r.Context(), 8*time.Second)
-		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
-		if providers[i].APIKey != "" {
-			req.Header.Set("Authorization", "Bearer "+providers[i].APIKey)
-		}
-		resp, err := mediaHTTPClient.Do(req)
-		cancel()
-		if err == nil && resp.StatusCode == 200 {
-			defer resp.Body.Close()
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(200)
-			_, _ = copyBody(w, resp)
+		// Use a per-iteration context that lives until the body has been
+		// fully copied — cancelling before the body read aborts the
+		// streaming copy half-way (silent truncation on slow upstreams).
+		if served := tryFetchVoicesUpstream(r.Context(), w, endpoint, providers[i].APIKey); served {
 			return
-		}
-		if resp != nil {
-			resp.Body.Close()
 		}
 	}
 	// Built-in default voices (OpenAI-compatible naming).

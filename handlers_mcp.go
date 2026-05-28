@@ -110,6 +110,12 @@ func mcpStdioRoundTrip(ctx context.Context, srv *store.MCPServer, msg []byte) ([
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("spawn: %w", err)
 	}
+	// Pipes are file descriptors backed by OS resources — close them when
+	// the handler returns regardless of which exit path fires. cmd.Wait()
+	// would close them too but we kill the process before Wait, so we own
+	// the close ourselves.
+	defer stdin.Close()
+	defer stdout.Close()
 	defer func() { _ = cmd.Process.Kill() }()
 	_, _ = stdin.Write(jsonRPCMsg(1, "initialize", mcpInitParams))
 	_, _ = stdin.Write(jsonRPCMsg(nil, "notifications/initialized", nil))
@@ -343,6 +349,10 @@ func mcpStdioListTools(ctx context.Context, srv *store.MCPServer) ([]map[string]
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("spawn: %w", err)
 	}
+	// Same rationale as mcpInvoke: own the pipe close ourselves because we
+	// kill the process before Wait would clean them up.
+	defer stdin.Close()
+	defer stdout.Close()
 	defer func() { _ = cmd.Process.Kill() }()
 
 	// Send initialize, initialized notification, then tools/list.

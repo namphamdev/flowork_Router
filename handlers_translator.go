@@ -12,6 +12,7 @@ import (
 
 	"github.com/flowork-os/flowork_Router/internal/router"
 	"github.com/flowork-os/flowork_Router/internal/store"
+	"github.com/flowork-os/flowork_Router/internal/translator/helpers"
 )
 
 // translatorRouterHandler — dispatch /api/translator and sub-routes.
@@ -192,7 +193,7 @@ func translatorSendHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if canonical.MaxTokens <= 0 {
-		canonical.MaxTokens = 1024
+		canonical.MaxTokens = helpers.DefaultMaxTokens
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 120*time.Second)
 	defer cancel()
