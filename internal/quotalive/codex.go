@@ -1,6 +1,13 @@
 // OpenAI Codex (ChatGPT backend) usage.
 // GET https://chatgpt.com/backend-api/wham/usage with Bearer token.
-// Response carries rate_limit / rate_limits_by_limit_id with reset windows.
+//
+// Codex carries TWO rate-limit surfaces:
+//   • primary rate_limit (chat / completion)
+//   • review rate_limit used by Codex's /review mode — surfaced via
+//     code_review_rate_limit, rate_limits_by_limit_id.code_review, or
+//     additional_rate_limits[].limit_name="code_review"
+// Each surface has primary_window + secondary_window (session + weekly).
+// We turn them into separate Windows so the dashboard can render both.
 
 package quotalive
 
@@ -10,6 +17,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -40,60 +48,220 @@ func (c *codexFetcher) Fetch(ctx context.Context, p Params) (Snapshot, error) {
 		return Snapshot{}, fmt.Errorf("codex %d: %s", resp.StatusCode, snip(body))
 	}
 
-	var parsed struct {
-		PlanType   string         `json:"plan_type,omitempty"`
-		RateLimit  map[string]any `json:"rate_limit,omitempty"`
-		RateLimits map[string]any `json:"rate_limits,omitempty"`
-		Summary    struct {
-			Plan string `json:"plan,omitempty"`
-		} `json:"summary,omitempty"`
-	}
-	if err := json.Unmarshal(body, &parsed); err != nil {
+	var raw map[string]any
+	if err := json.Unmarshal(body, &raw); err != nil {
 		return Snapshot{}, fmt.Errorf("parse: %w", err)
 	}
 
 	snap := Snapshot{
 		Provider:  "codex",
-		Plan:      firstNonEmpty(parsed.PlanType, parsed.Summary.Plan),
+		Plan:      pickCodexPlan(raw),
 		FetchedAt: time.Now().UTC(),
 		Raw:       body,
 	}
-	// Codex's rate_limit shape varies; surface a single "window" with the
-	// numeric `limit` / `used` / `reset_at` fields when present.
-	src := parsed.RateLimit
-	if len(src) == 0 {
-		src = parsed.RateLimits
-	}
-	if len(src) > 0 {
-		used := toFloat(src["used"])
-		total := toFloat(src["limit"])
-		remaining := total - used
-		if remaining < 0 {
-			remaining = 0
-		}
-		rp := 0.0
-		if total > 0 {
-			rp = (remaining / total) * 100
-		}
-		win := Window{
-			Label:            "primary",
-			Used:             used,
-			Total:            total,
-			Remaining:        remaining,
-			RemainingPercent: rp,
-			Unit:             "requests",
-		}
-		if s, _ := src["reset_at"].(string); s != "" {
-			if t, err := time.Parse(time.RFC3339, s); err == nil {
-				win.ResetAt = t
-			}
-		}
-		snap.Windows = append(snap.Windows, win)
+	appendCodexWindows(&snap, "", raw)
+	if review := findCodexReviewRateLimit(raw); review != nil {
+		appendCodexWindows(&snap, "review", review)
 	}
 	return snap, nil
 }
 
-func toFloat(v any) float64 {
+// pickCodexPlan reads plan_type or summary.plan.
+func pickCodexPlan(raw map[string]any) string {
+	if s, _ := raw["plan_type"].(string); s != "" {
+		return s
+	}
+	if summary, ok := raw["summary"].(map[string]any); ok {
+		if s, _ := summary["plan"].(string); s != "" {
+			return s
+		}
+	}
+	return ""
+}
+
+// getCodexRateLimitBody unwraps the rate_limit sub-object if present,
+// otherwise treats the snapshot itself as the rate_limit (some responses
+// inline the window fields at the root).
+func getCodexRateLimitBody(snapshot map[string]any) map[string]any {
+	if rl, ok := snapshot["rate_limit"].(map[string]any); ok {
+		return rl
+	}
+	return snapshot
+}
+
+// findCodexReviewRateLimit walks the three shapes upstream may use for the
+// review-specific rate limit; returns nil when none are present.
+func findCodexReviewRateLimit(raw map[string]any) map[string]any {
+	if v, ok := raw["code_review_rate_limit"].(map[string]any); ok {
+		return v
+	}
+	if v, ok := raw["review_rate_limit"].(map[string]any); ok {
+		return v
+	}
+	if byID, ok := raw["rate_limits_by_limit_id"].(map[string]any); ok {
+		for _, key := range []string{"code_review", "codex_review", "review"} {
+			if v, ok := byID[key].(map[string]any); ok {
+				return v
+			}
+		}
+	}
+	if extra, ok := raw["additional_rate_limits"].([]any); ok {
+		for _, e := range extra {
+			entry, ok := e.(map[string]any)
+			if !ok {
+				continue
+			}
+			label := strings.ToLower(strings.TrimSpace(firstStringField(
+				entry, "limit_name", "metered_feature", "id",
+			)))
+			if label == "" {
+				continue
+			}
+			if label == "code_review" || label == "codex_review" || label == "review" || strings.Contains(label, "review") {
+				return entry
+			}
+		}
+	}
+	return nil
+}
+
+// appendCodexWindows folds primary_window + secondary_window from snapshot
+// (or the unwrapped rate_limit) into snap.Windows with the given prefix.
+// prefix "" → labels "session" / "weekly"; prefix "review" → "review_session"
+// / "review_weekly". Either window can be absent.
+func appendCodexWindows(snap *Snapshot, prefix string, snapshot map[string]any) {
+	if snapshot == nil {
+		return
+	}
+	rate := getCodexRateLimitBody(snapshot)
+	primary := pickCodexWindow(rate, snapshot, "primary_window", "primary")
+	secondary := pickCodexWindow(rate, snapshot, "secondary_window", "secondary")
+
+	if primary != nil {
+		label := "session"
+		if prefix != "" {
+			label = prefix + "_session"
+		}
+		snap.Windows = append(snap.Windows, formatCodexWindow(label, primary))
+	}
+	if secondary != nil {
+		label := "weekly"
+		if prefix != "" {
+			label = prefix + "_weekly"
+		}
+		snap.Windows = append(snap.Windows, formatCodexWindow(label, secondary))
+	}
+}
+
+// pickCodexWindow looks for keyA or keyB on rate (preferred) then snapshot.
+func pickCodexWindow(rate, snapshot map[string]any, keyA, keyB string) map[string]any {
+	for _, src := range []map[string]any{rate, snapshot} {
+		if src == nil {
+			continue
+		}
+		for _, k := range []string{keyA, keyB} {
+			if v, ok := src[k].(map[string]any); ok {
+				return v
+			}
+		}
+	}
+	return nil
+}
+
+// formatCodexWindow converts a Codex window into a Window struct. The
+// used_percent / percent_used field carries a 0-100 percentage which we clamp.
+func formatCodexWindow(label string, window map[string]any) Window {
+	used := toCodexNumber(window["used_percent"])
+	if used == 0 {
+		used = toCodexNumber(window["percent_used"])
+	}
+	if used < 0 {
+		used = 0
+	}
+	if used > 100 {
+		used = 100
+	}
+	remaining := 100 - used
+	w := Window{
+		Label:            label,
+		Used:             used,
+		Total:            100,
+		Remaining:        remaining,
+		RemainingPercent: remaining,
+		Unit:             "percent",
+	}
+	for _, k := range []string{"reset_at", "resets_at", "resetAt"} {
+		if v, ok := window[k]; ok {
+			if t, ok := parseCodexResetTime(v); ok {
+				w.ResetAt = t
+				break
+			}
+		}
+	}
+	return w
+}
+
+// parseCodexResetTime accepts seconds, milliseconds, or RFC3339-ish strings.
+func parseCodexResetTime(v any) (time.Time, bool) {
+	switch t := v.(type) {
+	case float64:
+		if t == 0 {
+			return time.Time{}, false
+		}
+		if t < 1e12 { // seconds
+			return time.Unix(int64(t), 0).UTC(), true
+		}
+		return time.Unix(0, int64(t)*int64(time.Millisecond)).UTC(), true
+	case string:
+		if t == "" {
+			return time.Time{}, false
+		}
+		if isAllDigits(t) {
+			n := atoi64(t)
+			if n < 1e12 {
+				return time.Unix(n, 0).UTC(), true
+			}
+			return time.Unix(0, n*int64(time.Millisecond)).UTC(), true
+		}
+		if parsed, err := time.Parse(time.RFC3339, t); err == nil {
+			return parsed.UTC(), true
+		}
+	}
+	return time.Time{}, false
+}
+
+func isAllDigits(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, c := range s {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+func atoi64(s string) int64 {
+	var n int64
+	for _, c := range s {
+		n = n*10 + int64(c-'0')
+	}
+	return n
+}
+
+// firstStringField returns the first non-empty string value among keys, or "".
+func firstStringField(m map[string]any, keys ...string) string {
+	for _, k := range keys {
+		if v, _ := m[k].(string); v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
+// toCodexNumber pulls a numeric value out of an unknown type.
+func toCodexNumber(v any) float64 {
 	switch t := v.(type) {
 	case float64:
 		return t
@@ -101,6 +269,10 @@ func toFloat(v any) float64 {
 		return float64(t)
 	case int64:
 		return float64(t)
+	case string:
+		if isAllDigits(t) {
+			return float64(atoi64(t))
+		}
 	}
 	return 0
 }
