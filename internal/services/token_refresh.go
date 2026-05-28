@@ -9,8 +9,39 @@ import (
 	"time"
 )
 
-// RefreshLead is how far ahead of expiry we attempt a refresh.
+// RefreshLead is the default lead time used when a provider doesn't appear
+// in RefreshLeadByProvider. Long-lived OAuth tokens (e.g. Claude consumer
+// OAuth at ~4h) get more lead than short-lived device tokens (qwen ~20m).
 var RefreshLead = 5 * time.Minute
+
+// RefreshLeadByProvider lets per-provider token lifetimes drive their own
+// refresh cadence. Keys are normalised lower-case provider identifiers as
+// returned by TokenSource.Provider(). Unknown providers fall back to the
+// package-level RefreshLead constant.
+var RefreshLeadByProvider = map[string]time.Duration{
+	"codex":        5 * 24 * time.Hour, // 5 days — Codex tokens last ~30d
+	"openai":       5 * 24 * time.Hour, // alias
+	"claude":       4 * time.Hour,      // Claude consumer OAuth ~12h
+	"anthropic":    4 * time.Hour,      // alias
+	"iflow":        24 * time.Hour,     // iFlow tokens ~14 days
+	"qwen":         20 * time.Minute,   // Qwen device tokens ~1h
+	"kimi-coding":  5 * time.Minute,    // Kimi tokens ~30m
+	"kimi":         5 * time.Minute,
+	"antigravity":  5 * time.Minute,    // Google CloudCode tokens ~1h
+	"gemini-cli":   5 * time.Minute,    // alias
+	"github":       4 * time.Hour,      // Copilot tokens ~12h
+	"copilot":      4 * time.Hour,      // alias
+	"kiro":         4 * time.Hour,      // AWS SSO tokens ~8h
+}
+
+// leadFor returns the refresh lead time for a provider, falling back to the
+// package-level RefreshLead when the provider is unknown.
+func leadFor(provider string) time.Duration {
+	if d, ok := RefreshLeadByProvider[provider]; ok && d > 0 {
+		return d
+	}
+	return RefreshLead
+}
 
 // FailureRetry is the polling interval when a refresh failed.
 var FailureRetry = 60 * time.Second
@@ -88,7 +119,7 @@ func (w *Worker) loop(ctx context.Context) {
 			if exp.IsZero() {
 				continue // no expiry recorded yet → leave alone
 			}
-			refreshAt := exp.Add(-RefreshLead)
+			refreshAt := exp.Add(-leadFor(s.Provider()))
 			if !refreshAt.After(now) {
 				// already due → handle this one first
 				due = s
