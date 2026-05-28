@@ -131,6 +131,11 @@ func DispatchChatCompletion(ctx context.Context, req OpenAIRequest) (*OpenAIResp
 		injectCavemanIntoRequest(&req, settings.CavemanLevel)
 	}
 
+	// Normalise tool-call ids + insert any missing tool_result follow-ups.
+	// Without this, malformed payloads from upstream clients reach the
+	// Anthropic API as 400s ("unmatched tool_use ids" / "invalid id pattern").
+	preprocessToolCalls(&req)
+
 	// Brain enrichment: if this request targets the brain model, inject
 	// retrieved knowledge + skills before resolving the backend. No-op unless
 	// settings.Brain.Enabled and model == Brain.Model. brainInfo (nil if not
