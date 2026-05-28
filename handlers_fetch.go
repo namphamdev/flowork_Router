@@ -5,10 +5,12 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
 	"github.com/flowork-os/flowork_Router/internal/fetch"
+	"github.com/flowork-os/flowork_Router/internal/safeurl"
 	"github.com/flowork-os/flowork_Router/internal/store"
 )
 
@@ -35,6 +37,22 @@ func webFetchHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "url required", http.StatusBadRequest)
 		return
 	}
+
+	// SSRF guard: only allow public destinations. Blocks loopback, private,
+	// link-local (incl. cloud metadata 169.254.169.254), CGNAT, multicast.
+	// Resolves up-front so the dialer can't see a different IP than what we
+	// validated (closes the DNS rebinding window).
+	urlCtx, urlCancel := context.WithTimeout(r.Context(), 5*time.Second)
+	if _, err := safeurl.Validate(urlCtx, in.URL); err != nil {
+		urlCancel()
+		if errors.Is(err, safeurl.ErrBlocked) {
+			http.Error(w, "url targets a non-public address", http.StatusForbidden)
+			return
+		}
+		http.Error(w, "invalid url", http.StatusBadRequest)
+		return
+	}
+	urlCancel()
 
 	// Resolve which vendor to call. Explicit > active media provider > "raw" fallback.
 	picked := pickFetchProvider(in.Provider, in.APIKey, in.BaseURL)
