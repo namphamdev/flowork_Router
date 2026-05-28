@@ -1,0 +1,164 @@
+// Brain write side (option C: flow_router = sole owner).
+
+package brain
+
+import (
+	"context"
+	"crypto/sha256"
+	"database/sql"
+	"encoding/hex"
+	"fmt"
+	"sync"
+	"time"
+)
+
+// Write side of the brain — flow_router as the SOLE OWNER of the knowledge brain
+// (option C). The read path (Open, mode=ro) stays the fast default; writes use a
+// separate read-write connection opened lazily here. Admin edits go through the
+// dashboard; organic learning goes through Ingest (compounding). Both respect the
+// brain's append-only doctrine: soft-delete (tombstone), never hard DROP.
+
+var (
+	rwMu     sync.Mutex
+	rwHandle *sql.DB
+	rwPath   string
+)
+
+// OpenRW returns a shared read-write handle to the brain DB (lazy, cached).
+// Distinct from Open() which is read-only. Used only for admin CRUD + ingest.
+func OpenRW() (*sql.DB, error) {
+	rwMu.Lock()
+	defer rwMu.Unlock()
+	p := DBPath()
+	if rwHandle != nil && rwPath == p {
+		return rwHandle, nil
+	}
+	if rwHandle != nil {
+		_ = rwHandle.Close()
+		rwHandle = nil
+	}
+	dsn := "file:" + p + "?_pragma=journal_mode(WAL)&_pragma=busy_timeout(8000)&_pragma=foreign_keys(0)"
+	db, err := sql.Open("sqlite", dsn)
+	if err != nil {
+		return nil, err
+	}
+	db.SetMaxOpenConns(1) // single writer
+	if err := db.Ping(); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	rwHandle = db
+	rwPath = p
+	return rwHandle, nil
+}
+
+// AddConstitution appends a new constitution rule (append-only). Returns new id.
+func AddConstitution(ctx context.Context, section, content string, amplitude float64, source string) (int64, error) {
+	if section == "" || content == "" {
+		return 0, fmt.Errorf("section and content required")
+	}
+	if source == "" {
+		source = "flow_router_admin"
+	}
+	db, err := OpenRW()
+	if err != nil {
+		return 0, err
+	}
+	res, err := db.ExecContext(ctx, `INSERT INTO constitution (source_file, section, content, amplitude)
+		VALUES (?, ?, ?, ?)`, source, section, content, amplitude)
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
+}
+
+// UpdateConstitution edits an existing rule's content/amplitude (by id).
+func UpdateConstitution(ctx context.Context, id int64, content string, amplitude float64) error {
+	if content == "" {
+		return fmt.Errorf("content required")
+	}
+	db, err := OpenRW()
+	if err != nil {
+		return err
+	}
+	res, err := db.ExecContext(ctx, `UPDATE constitution SET content = ?, amplitude = ?
+		WHERE id = ? AND deleted_at IS NULL`, content, amplitude, id)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("constitution id %d not found", id)
+	}
+	return nil
+}
+
+// SoftDeleteConstitution tombstones a rule (sets deleted_at) — never a hard DELETE,
+// honoring the brain's append-only / FQP-12 doctrine.
+func SoftDeleteConstitution(ctx context.Context, id int64) error {
+	db, err := OpenRW()
+	if err != nil {
+		return err
+	}
+	res, err := db.ExecContext(ctx, `UPDATE constitution SET deleted_at = ?, deleted_by = 'flow_router_admin'
+		WHERE id = ? AND deleted_at IS NULL`, time.Now().UTC().Format(time.RFC3339), id)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("constitution id %d not found or already deleted", id)
+	}
+	return nil
+}
+
+// AddDrawer files a new knowledge chunk into the Memory Palace (drawers + the
+// FTS5 index, which has no sync trigger so both are written). Content-hash
+// dedup: identical content is skipped. Returns (drawerID, added). This is the
+// write primitive behind compounding ingest — the brain learning from use.
+func AddDrawer(ctx context.Context, content, wing, room, memType string) (string, bool, error) {
+	content = trimSpace(content)
+	if content == "" {
+		return "", false, fmt.Errorf("empty content")
+	}
+	if wing == "" {
+		wing = "compounding"
+	}
+	if memType == "" {
+		memType = "compounding"
+	}
+	sum := sha256.Sum256([]byte(content))
+	hash := hex.EncodeToString(sum[:])
+	id := hash[:16]
+
+	db, err := OpenRW()
+	if err != nil {
+		return "", false, err
+	}
+	// Dedup by content_hash (skip if a live drawer already has it).
+	var exists string
+	if err := db.QueryRowContext(ctx, `SELECT id FROM drawers WHERE content_hash = ? AND deleted_at IS NULL LIMIT 1`, hash).Scan(&exists); err == nil {
+		return exists, false, nil // already known
+	}
+	if _, err := db.ExecContext(ctx, `INSERT OR IGNORE INTO drawers
+		(id, content, wing, room, source_type, importance, content_hash, mem_type)
+		VALUES (?, ?, ?, ?, 'compounding', 3.0, ?, ?)`, id, content, wing, room, hash, memType); err != nil {
+		return "", false, fmt.Errorf("insert drawer: %w", err)
+	}
+	// Keep the FTS index in sync (no DB trigger does this).
+	if _, err := db.ExecContext(ctx, `INSERT INTO memory_fts (drawer_id, content, wing, room, source_file)
+		VALUES (?, ?, ?, ?, 'compounding')`, id, content, wing, room); err != nil {
+		return "", false, fmt.Errorf("insert fts: %w", err)
+	}
+	return id, true, nil
+}
+
+// trimSpace — local helper (avoids importing strings just for this).
+func trimSpace(s string) string {
+	start, end := 0, len(s)
+	for start < end && (s[start] == ' ' || s[start] == '\n' || s[start] == '\t' || s[start] == '\r') {
+		start++
+	}
+	for end > start && (s[end-1] == ' ' || s[end-1] == '\n' || s[end-1] == '\t' || s[end-1] == '\r') {
+		end--
+	}
+	return s[start:end]
+}

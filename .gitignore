@@ -1,0 +1,26 @@
+flow-router-bin
+flow-router-bin.exe
+/flow_router
+*.log
+/data/
+# Local notes / private rules — never commit
+catatan_untuk_ai_external
+catatan
+# Secrets / local data — never commit
+secret.key
+*.key
+*.pem
+/db/
+.flow_router/
+*.sqlite
+*.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal
+# Heavy assets — local-only
+/brain/
+/models/
+/bin/
+*.gguf
+# Private notes
+notes_private.md
+notes_private/

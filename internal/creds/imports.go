@@ -1,0 +1,204 @@
+// OAuth Imports (Claude/Codex/Cursor auto-detect).
+
+package creds
+
+import (
+	"encoding/json"
+	"errors"
+	"os"
+	"path/filepath"
+	"time"
+)
+
+var (
+	errNoCreds     = errors.New("codex credentials not found — install Codex CLI + login")
+	errNoToken     = errors.New("credential file present but no access token field recognised")
+	errCursorVscdb = errors.New("cursor session is in state.vscdb (SQLite) — paste the token via the OAuth import tab")
+)
+
+// ImportStatus — per-source detection result.
+type ImportStatus struct {
+	Source     string `json:"source"`
+	Path       string `json:"path"`
+	Found      bool   `json:"found"`
+	Expired    bool   `json:"expired"`
+	MaskedKey  string `json:"maskedKey,omitempty"`
+	ExpiresAt  string `json:"expiresAt,omitempty"`
+	Error      string `json:"error,omitempty"`
+}
+
+// DetectAll — scan all known credential file locations.
+func DetectAll() []ImportStatus {
+	home, _ := os.UserHomeDir()
+	return []ImportStatus{
+		detectClaude(home),
+		detectCodex(home),
+		detectCursor(home),
+		detectGitlabDuo(home),
+	}
+}
+
+func detectClaude(home string) ImportStatus {
+	p := filepath.Join(home, ".claude", ".credentials.json")
+	s := ImportStatus{Source: "claude-code", Path: p}
+	data, err := os.ReadFile(p)
+	if err != nil {
+		if os.IsNotExist(err) {
+			s.Error = "not found — run `claude login`"
+		} else {
+			s.Error = err.Error()
+		}
+		return s
+	}
+	s.Found = true
+	var c CredentialsFile
+	if err := json.Unmarshal(data, &c); err != nil {
+		s.Error = "parse: " + err.Error()
+		return s
+	}
+	s.MaskedKey = maskToken(c.ClaudeAiOauth.AccessToken)
+	if c.ClaudeAiOauth.ExpiresAt > 0 {
+		exp := time.UnixMilli(c.ClaudeAiOauth.ExpiresAt)
+		s.ExpiresAt = exp.Format(time.RFC3339)
+		s.Expired = time.Now().After(exp)
+	}
+	return s
+}
+
+func detectCodex(home string) ImportStatus {
+	candidates := []string{
+		filepath.Join(home, ".codex", "auth.json"),
+		filepath.Join(home, ".openai", "auth.json"),
+	}
+	s := ImportStatus{Source: "codex"}
+	for _, p := range candidates {
+		s.Path = p
+		data, err := os.ReadFile(p)
+		if err == nil {
+			s.Found = true
+			// Best-effort parse — Codex schema differs by version
+			var auth map[string]any
+			if json.Unmarshal(data, &auth) == nil {
+				if tok, ok := auth["accessToken"].(string); ok {
+					s.MaskedKey = maskToken(tok)
+				} else if tok, ok := auth["token"].(string); ok {
+					s.MaskedKey = maskToken(tok)
+				}
+				if exp, ok := auth["expiresAt"].(string); ok {
+					s.ExpiresAt = exp
+				}
+			}
+			return s
+		}
+	}
+	s.Error = "not found — install Codex CLI + login"
+	return s
+}
+
+// LoadCodexToken reads the Codex (OpenAI) CLI access token from
+// ~/.codex/auth.json (or ~/.openai/auth.json). Handles the common shapes:
+// top-level accessToken/token, nested tokens.access_token, or OPENAI_API_KEY.
+func LoadCodexToken() (string, error) {
+	home, _ := os.UserHomeDir()
+	for _, p := range []string{
+		filepath.Join(home, ".codex", "auth.json"),
+		filepath.Join(home, ".openai", "auth.json"),
+	} {
+		data, err := os.ReadFile(p)
+		if err != nil {
+			continue
+		}
+		var a map[string]any
+		if json.Unmarshal(data, &a) != nil {
+			continue
+		}
+		if t, ok := a["accessToken"].(string); ok && t != "" {
+			return t, nil
+		}
+		if t, ok := a["token"].(string); ok && t != "" {
+			return t, nil
+		}
+		if t, ok := a["OPENAI_API_KEY"].(string); ok && t != "" {
+			return t, nil
+		}
+		if toks, ok := a["tokens"].(map[string]any); ok {
+			if t, ok := toks["access_token"].(string); ok && t != "" {
+				return t, nil
+			}
+		}
+		return "", errNoToken
+	}
+	return "", errNoCreds
+}
+
+// LoadCursorToken reads a Cursor session token from ~/.cursor/auth.json when
+// present (JSON form). The desktop app's state.vscdb (SQLite) is NOT parsed —
+// for that, paste the token via the OAuth import tab.
+func LoadCursorToken() (string, error) {
+	home, _ := os.UserHomeDir()
+	data, err := os.ReadFile(filepath.Join(home, ".cursor", "auth.json"))
+	if err != nil {
+		return "", errCursorVscdb
+	}
+	var a map[string]any
+	if json.Unmarshal(data, &a) != nil {
+		return "", errNoToken
+	}
+	for _, k := range []string{"accessToken", "token", "access_token"} {
+		if t, ok := a[k].(string); ok && t != "" {
+			return t, nil
+		}
+	}
+	return "", errNoToken
+}
+
+func detectCursor(home string) ImportStatus {
+	candidates := []string{
+		filepath.Join(home, ".config", "Cursor", "User", "globalStorage", "state.vscdb"),
+		filepath.Join(home, ".cursor", "auth.json"),
+	}
+	s := ImportStatus{Source: "cursor"}
+	for _, p := range candidates {
+		s.Path = p
+		if _, err := os.Stat(p); err == nil {
+			s.Found = true
+			// Cursor stores session in vscdb (SQLite) — not parsing here
+			// Just signal presence. Phase 2 deep parse.
+			s.MaskedKey = "(session present, parse Phase 2)"
+			return s
+		}
+	}
+	s.Error = "not found — install Cursor + login"
+	return s
+}
+
+func detectGitlabDuo(home string) ImportStatus {
+	p := filepath.Join(home, ".config", "gitlab-duo", "auth.json")
+	s := ImportStatus{Source: "gitlab-duo", Path: p}
+	if _, err := os.Stat(p); err != nil {
+		s.Error = "not found"
+		return s
+	}
+	s.Found = true
+	s.MaskedKey = "(token present, parse Phase 2)"
+	return s
+}
+
+func maskToken(t string) string {
+	if len(t) < 14 {
+		return "[masked]"
+	}
+	return t[:10] + "...[masked " + lenStr(len(t)) + " chars]"
+}
+
+func lenStr(n int) string {
+	if n == 0 {
+		return "0"
+	}
+	out := ""
+	for n > 0 {
+		out = string(rune('0'+n%10)) + out
+		n /= 10
+	}
+	return out
+}

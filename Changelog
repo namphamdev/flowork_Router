@@ -1,0 +1,29 @@
+# Changelog
+
+## 1.0.0 — Initial public release
+
+Multi-provider AI gateway in Go. Highlights:
+
+- One OpenAI-compatible HTTP endpoint that routes to multiple LLM backends
+  (Anthropic, OpenAI, Google Gemini, DeepSeek, Groq, Together, OpenRouter,
+  local llama.cpp, Cursor, Codex, Antigravity, Kiro, GitHub Copilot, …).
+- Subscription auth: drive Claude Code / Cursor / Codex through your
+  existing Claude Pro/Max plan (or paid IDE bundles) without an extra
+  per-token API key.
+- Auto format translation: OpenAI ⇄ Anthropic ⇄ Gemini, including
+  streaming SSE and tool-calling.
+- Cost-tier routing classifies each request as cheap / standard / strong
+  and picks providers by `tier:*` tag — saves money on simple queries.
+- Smart RTK token saver with auto-detected tool-output compressors
+  (git-diff, build-output, grep, find, tree, ls, dedup-log, smart-truncate).
+- Brain endpoint: server-side RAG enrichment + skill injection from a
+  Memory Palace SQLite DB. Plug-and-play; off when no DB present.
+- Media stack: STT (Deepgram / AssemblyAI / Gemini / Whisper), TTS,
+  embeddings, image generation, web fetch + search.
+- MITM TLS inspector with per-SNI cert minting, DNS hijack and per-IDE
+  rewriters (Antigravity / Copilot / Cursor / Kiro).
+- Embedded SPA dashboard with 20 tabs, i18n (en / id / ja-JP / vi / zh-CN),
+  provider presets, OAuth import, tunnel watchdog, MCP registry, per-day
+  usage analytics, quota tracker (live + cached).
+- `flow-cli` companion binary (interactive TUI, autostart, tray).
+- Single binary, no CGO, Linux / macOS / Windows.

@@ -1,0 +1,432 @@
+// Resource CRUD Handlers.
+
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"os"
+
+	"github.com/flowork-os/flowork_Router/internal/store"
+)
+
+// ── Providers ────────────────────────────────────────────────────────────
+
+func providersListAddHandler(w http.ResponseWriter, r *http.Request) {
+	d, _ := store.Open()
+	switch r.Method {
+	case http.MethodGet:
+		providers, err := store.ListProviders(d)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"data": providers})
+	case http.MethodPost:
+		var p store.ProviderConnection
+		if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
+			http.Error(w, "parse: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		if err := store.UpsertProvider(d, &p); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(p)
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+// providerCRUDHandler — /api/providers/:id GET/PUT/DELETE, plus sub-actions
+// /:id/models, /:id/test, /:id/test-models (delegated to provider sub-handler).
+func providerCRUDHandler(w http.ResponseWriter, r *http.Request) {
+	d, _ := store.Open()
+	rest := r.URL.Path[len("/api/providers/"):]
+	if rest == "" {
+		http.Error(w, "missing id", http.StatusBadRequest)
+		return
+	}
+	// Sub-action routing: /:id/{models,test,test-models}
+	if i := indexByte(rest, '/'); i >= 0 {
+		id, action := rest[:i], rest[i+1:]
+		providerSubActionHandler(w, r, id, action)
+		return
+	}
+	id := rest
+	switch r.Method {
+	case http.MethodGet:
+		p, err := store.GetProvider(d, id)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if p == nil {
+			http.Error(w, "not found", http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(p)
+	case http.MethodPut:
+		var p store.ProviderConnection
+		if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
+			http.Error(w, "parse: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		p.ID = id
+		if err := store.UpsertProvider(d, &p); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(p)
+	case http.MethodDelete:
+		if err := store.DeleteProvider(d, id); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+// presetsHandler — GET curated provider templates for one-click setup.
+func presetsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]any{"data": store.Presets})
+}
+
+// ── Combos ───────────────────────────────────────────────────────────────
+
+func combosListAddHandler(w http.ResponseWriter, r *http.Request) {
+	d, _ := store.Open()
+	switch r.Method {
+	case http.MethodGet:
+		items, err := store.ListCombos(d)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"data": items, "count": len(items)})
+	case http.MethodPost:
+		var c store.Combo
+		if err := json.NewDecoder(r.Body).Decode(&c); err != nil {
+			http.Error(w, "parse: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		if err := store.UpsertCombo(d, &c); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(c)
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func comboCRUDHandler(w http.ResponseWriter, r *http.Request) {
+	d, _ := store.Open()
+	id := r.URL.Path[len("/api/combos/"):]
+	if id == "" {
+		http.Error(w, "missing id", http.StatusBadRequest)
+		return
+	}
+	switch r.Method {
+	case http.MethodPut:
+		var c store.Combo
+		if err := json.NewDecoder(r.Body).Decode(&c); err != nil {
+			http.Error(w, "parse: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		c.ID = id
+		if err := store.UpsertCombo(d, &c); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(c)
+	case http.MethodDelete:
+		if err := store.DeleteCombo(d, id); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+// ── API keys ─────────────────────────────────────────────────────────────
+
+func apiKeysListAddHandler(w http.ResponseWriter, r *http.Request) {
+	d, _ := store.Open()
+	switch r.Method {
+	case http.MethodGet:
+		items, err := store.ListAPIKeys(d)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"data": items, "count": len(items)})
+	case http.MethodPost:
+		var body struct {
+			Name             string  `json:"name"`
+			AllowedProviders string  `json:"allowedProviders"`
+			DailyCapUsd      float64 `json:"dailyCapUsd"`
+			MonthlyCapUsd    float64 `json:"monthlyCapUsd"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			http.Error(w, "parse: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		if body.Name == "" {
+			body.Name = "key-" + fmt.Sprintf("%d", os.Getpid())
+		}
+		k, err := store.GenerateAPIKey(d, body.Name, body.AllowedProviders, body.DailyCapUsd, body.MonthlyCapUsd)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(k) // includes plaintextKey
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func apiKeyCRUDHandler(w http.ResponseWriter, r *http.Request) {
+	d, _ := store.Open()
+	id := r.URL.Path[len("/api/keys/"):]
+	if id == "" {
+		http.Error(w, "missing id", http.StatusBadRequest)
+		return
+	}
+	if r.Method != http.MethodDelete {
+		http.Error(w, "method not allowed (POST /api/keys to create, DELETE to revoke)", http.StatusMethodNotAllowed)
+		return
+	}
+	if err := store.DeleteAPIKey(d, id); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// ── Skills ───────────────────────────────────────────────────────────────
+
+func skillsListAddHandler(w http.ResponseWriter, r *http.Request) {
+	d, _ := store.Open()
+	switch r.Method {
+	case http.MethodGet:
+		items, err := store.ListSkills(d)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"data": items, "count": len(items)})
+	case http.MethodPost:
+		var s store.Skill
+		if err := json.NewDecoder(r.Body).Decode(&s); err != nil {
+			http.Error(w, "parse: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		if err := store.UpsertSkill(d, &s); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(s)
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func skillCRUDHandler(w http.ResponseWriter, r *http.Request) {
+	d, _ := store.Open()
+	id := r.URL.Path[len("/api/skills/"):]
+	if id == "" {
+		http.Error(w, "missing id", http.StatusBadRequest)
+		return
+	}
+	switch r.Method {
+	case http.MethodPut:
+		var s store.Skill
+		if err := json.NewDecoder(r.Body).Decode(&s); err != nil {
+			http.Error(w, "parse: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		s.ID = id
+		if err := store.UpsertSkill(d, &s); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(s)
+	case http.MethodDelete:
+		if err := store.DeleteSkill(d, id); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+// ── Proxy pools ──────────────────────────────────────────────────────────
+
+func proxyPoolsListAddHandler(w http.ResponseWriter, r *http.Request) {
+	d, _ := store.Open()
+	switch r.Method {
+	case http.MethodGet:
+		items, err := store.ListProxyPools(d)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"data": items, "count": len(items)})
+	case http.MethodPost:
+		var p store.ProxyPool
+		if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
+			http.Error(w, "parse: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		if err := store.UpsertProxyPool(d, &p); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(p)
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func proxyPoolCRUDHandler(w http.ResponseWriter, r *http.Request) {
+	d, _ := store.Open()
+	rest := r.URL.Path[len("/api/proxy-pools/"):]
+	if rest == "" {
+		http.Error(w, "missing id", http.StatusBadRequest)
+		return
+	}
+	// /:id/test sub-action
+	if i := indexByte(rest, '/'); i >= 0 {
+		id, action := rest[:i], rest[i+1:]
+		if action == "test" {
+			proxyPoolTestHandler(w, r, id)
+			return
+		}
+		http.Error(w, "unknown proxy-pool sub-action: "+action, http.StatusNotFound)
+		return
+	}
+	id := rest
+	switch r.Method {
+	case http.MethodPut:
+		var p store.ProxyPool
+		if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
+			http.Error(w, "parse: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		p.ID = id
+		if err := store.UpsertProxyPool(d, &p); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(p)
+	case http.MethodDelete:
+		if err := store.DeleteProxyPool(d, id); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+// ── Media providers ──────────────────────────────────────────────────────
+
+func mediaProvidersHandler(w http.ResponseWriter, r *http.Request) {
+	d, _ := store.Open()
+	switch r.Method {
+	case http.MethodGet:
+		cat := r.URL.Query().Get("category")
+		items, err := store.ListMediaProviders(d, cat)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"data": items, "count": len(items)})
+	case http.MethodPost:
+		var m store.MediaProvider
+		if err := json.NewDecoder(r.Body).Decode(&m); err != nil {
+			http.Error(w, "parse: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		if err := store.UpsertMediaProvider(d, &m); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(m)
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func mediaProviderCRUDHandler(w http.ResponseWriter, r *http.Request) {
+	d, _ := store.Open()
+	id := r.URL.Path[len("/api/media-providers/"):]
+	if id == "" {
+		http.Error(w, "missing id", http.StatusBadRequest)
+		return
+	}
+	cat := r.URL.Query().Get("category")
+	switch r.Method {
+	case http.MethodPut:
+		var m store.MediaProvider
+		if err := json.NewDecoder(r.Body).Decode(&m); err != nil {
+			http.Error(w, "parse: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		m.ID = id
+		if m.Category == "" {
+			m.Category = cat
+		}
+		if err := store.UpsertMediaProvider(d, &m); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(m)
+	case http.MethodDelete:
+		if cat == "" {
+			http.Error(w, "category query param required for delete", http.StatusBadRequest)
+			return
+		}
+		if err := store.DeleteMediaProvider(d, cat, id); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}
+}

@@ -1,0 +1,458 @@
+// Tool Calling Conversion (OpenAI ⇄ Anthropic).
+
+package router
+
+import (
+	"bufio"
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"strings"
+	"time"
+
+	"github.com/flowork-os/flowork_Router/internal/store"
+)
+
+// streamAnthropicWithTools — streaming counterpart of forwardAnthropicWithTools.
+// Sends the Anthropic tool body with stream:true and converts the SSE event
+// stream into OpenAI chat.completion.chunk deltas, including incremental
+// tool_calls (content_block tool_use → delta.tool_calls[].function.arguments).
+// This is what makes "streaming tool-use rounds" work for Anthropic upstreams
+// (openai-compat upstreams already stream tool_calls 1:1 via streamOpenAICompat).
+func streamAnthropicWithTools(ctx context.Context, p *store.ProviderConnection, baseURL string, req OpenAIRequest, w http.ResponseWriter, flusher http.Flusher) (OpenAIUsage, int, error) {
+	req.Stream = true
+	body, err := buildAnthropicToolBody(req)
+	if err != nil {
+		return OpenAIUsage{}, 0, fmt.Errorf("build anthropic tool body: %w", err)
+	}
+	endpoint := strings.TrimRight(baseURL, "/") + "/messages"
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(body))
+	if err != nil {
+		return OpenAIUsage{}, 0, err
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Accept", "text/event-stream")
+	httpReq.Header.Set("anthropic-version", "2023-06-01")
+	httpReq.Header.Set("User-Agent", "claude-cli/1.0.0 (flow_router)")
+	if err := applyAuth(httpReq, p); err != nil {
+		return OpenAIUsage{}, http.StatusUnauthorized, err
+	}
+	resp, err := outboundClient(ctx).Do(httpReq)
+	if err != nil {
+		return OpenAIUsage{}, http.StatusBadGateway, fmt.Errorf("upstream: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(io.LimitReader(resp.Body, 8192))
+		return OpenAIUsage{}, resp.StatusCode, fmt.Errorf("anthropic %d: %s", resp.StatusCode, truncate(string(b), 200))
+	}
+
+	w.WriteHeader(http.StatusOK)
+	flusher.Flush()
+	chunkID := fmt.Sprintf("chatcmpl-%d", time.Now().UnixNano())
+	created := time.Now().Unix()
+	writeOpenAIDelta(w, flusher, chunkID, created, req.Model, map[string]any{"role": "assistant"}, "")
+
+	scanner := bufio.NewScanner(resp.Body)
+	scanner.Buffer(make([]byte, 0, 1024*1024), 4*1024*1024)
+	var usage OpenAIUsage
+	var firstWritten bool
+	stopReason := ""
+	blockToTool := map[int]int{} // anthropic content-block index → openai tool_calls index
+	toolIdx := -1
+	for scanner.Scan() {
+		line := scanner.Text()
+		if !strings.HasPrefix(line, "data: ") {
+			continue
+		}
+		payload := strings.TrimSpace(strings.TrimPrefix(line, "data: "))
+		if payload == "" {
+			continue
+		}
+		var ev struct {
+			Type  string `json:"type"`
+			Index int    `json:"index"`
+			Delta struct {
+				Type        string `json:"type"`
+				Text        string `json:"text"`
+				PartialJSON string `json:"partial_json"`
+				StopReason  string `json:"stop_reason"`
+			} `json:"delta"`
+			ContentBlock struct {
+				Type string `json:"type"`
+				ID   string `json:"id"`
+				Name string `json:"name"`
+			} `json:"content_block"`
+			Message struct {
+				Usage struct {
+					InputTokens int `json:"input_tokens"`
+				} `json:"usage"`
+			} `json:"message"`
+			Usage struct {
+				OutputTokens int `json:"output_tokens"`
+			} `json:"usage"`
+		}
+		if json.Unmarshal([]byte(payload), &ev) != nil {
+			continue
+		}
+		switch ev.Type {
+		case "message_start":
+			usage.PromptTokens = ev.Message.Usage.InputTokens
+		case "content_block_start":
+			if ev.ContentBlock.Type == "tool_use" {
+				toolIdx++
+				blockToTool[ev.Index] = toolIdx
+				writeOpenAIDelta(w, flusher, chunkID, created, req.Model, map[string]any{
+					"tool_calls": []map[string]any{{
+						"index": toolIdx, "id": ev.ContentBlock.ID, "type": "function",
+						"function": map[string]any{"name": ev.ContentBlock.Name, "arguments": ""},
+					}},
+				}, "")
+				firstWritten = true
+			}
+		case "content_block_delta":
+			switch ev.Delta.Type {
+			case "text_delta":
+				if ev.Delta.Text != "" {
+					writeOpenAIDelta(w, flusher, chunkID, created, req.Model, map[string]any{"content": ev.Delta.Text}, "")
+					firstWritten = true
+				}
+			case "input_json_delta":
+				if ev.Delta.PartialJSON != "" {
+					writeOpenAIDelta(w, flusher, chunkID, created, req.Model, map[string]any{
+						"tool_calls": []map[string]any{{
+							"index":    blockToTool[ev.Index],
+							"function": map[string]any{"arguments": ev.Delta.PartialJSON},
+						}},
+					}, "")
+					firstWritten = true
+				}
+			}
+		case "message_delta":
+			if ev.Delta.StopReason != "" {
+				stopReason = ev.Delta.StopReason
+			}
+			if ev.Usage.OutputTokens > 0 {
+				usage.CompletionTokens = ev.Usage.OutputTokens
+			}
+		case "message_stop":
+			fr := "stop"
+			switch stopReason {
+			case "max_tokens":
+				fr = "length"
+			case "tool_use":
+				fr = "tool_calls"
+			}
+			writeOpenAIDelta(w, flusher, chunkID, created, req.Model, map[string]any{}, fr)
+			usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+			_, _ = w.Write([]byte("data: [DONE]\n\n"))
+			flusher.Flush()
+			return usage, http.StatusOK, nil
+		}
+	}
+	if err := scanner.Err(); err != nil && !firstWritten {
+		return usage, http.StatusBadGateway, fmt.Errorf("anthropic stream read: %w", err)
+	}
+	usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+	return usage, http.StatusOK, nil
+}
+
+// forwardAnthropicWithTools — rich tool path. Builds an Anthropic request
+// with tool specs + structured content blocks, forwards, then converts the
+// tool_use response back to OpenAI tool_calls. Non-streaming only (streaming
+// tool_use Phase 2.1+); callers needing stream fall back to text path.
+func forwardAnthropicWithTools(ctx context.Context, p *store.ProviderConnection, baseURL string, req OpenAIRequest) (*OpenAIResponse, int, error) {
+	req.Stream = false // tool rounds resolved non-streaming
+	body, err := buildAnthropicToolBody(req)
+	if err != nil {
+		return nil, 0, fmt.Errorf("build anthropic tool body: %w", err)
+	}
+	endpoint := strings.TrimRight(baseURL, "/") + "/messages"
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(body))
+	if err != nil {
+		return nil, 0, fmt.Errorf("build req: %w", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("anthropic-version", "2023-06-01")
+	httpReq.Header.Set("User-Agent", "claude-cli/1.0.0 (flow_router)")
+	if err := applyAuth(httpReq, p); err != nil {
+		return nil, http.StatusUnauthorized, err
+	}
+	resp, err := outboundClient(ctx).Do(httpReq)
+	if err != nil {
+		return nil, http.StatusBadGateway, fmt.Errorf("upstream: %w", err)
+	}
+	defer resp.Body.Close()
+	respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 16*1024*1024))
+	if resp.StatusCode != http.StatusOK {
+		return nil, resp.StatusCode, fmt.Errorf("anthropic %d: %s", resp.StatusCode, truncate(string(respBody), 200))
+	}
+	out, err := parseAnthropicToolResponse(respBody, req.Model)
+	if err != nil {
+		return nil, http.StatusBadGateway, err
+	}
+	return out, http.StatusOK, nil
+}
+
+// hasToolContext — true when the request involves tool calling, so the rich
+// Anthropic conversion path is required instead of the simple text path.
+func hasToolContext(req OpenAIRequest) bool {
+	if len(req.Tools) > 0 && string(req.Tools) != "null" {
+		return true
+	}
+	for _, m := range req.Messages {
+		if len(m.ToolCalls) > 0 || m.ToolCallID != "" || m.Role == "tool" {
+			return true
+		}
+	}
+	return false
+}
+
+// openAIToolFn mirrors the function spec in an OpenAI tool entry.
+type openAIToolFn struct {
+	Type     string `json:"type"`
+	Function struct {
+		Name        string          `json:"name"`
+		Description string          `json:"description"`
+		Parameters  json.RawMessage `json:"parameters"`
+	} `json:"function"`
+}
+
+type openAIToolCall struct {
+	ID       string `json:"id"`
+	Type     string `json:"type"`
+	Function struct {
+		Name      string `json:"name"`
+		Arguments string `json:"arguments"`
+	} `json:"function"`
+}
+
+// buildAnthropicToolBody — construct the Anthropic Messages request body
+// (as a map) including tools + structured content blocks. Returns JSON bytes.
+func buildAnthropicToolBody(req OpenAIRequest) ([]byte, error) {
+	body := map[string]any{
+		"model":      normalizeClaudeModel(req.Model),
+		"max_tokens": req.MaxTokens,
+	}
+	if body["max_tokens"].(int) <= 0 {
+		body["max_tokens"] = 4096
+	}
+	if req.Temperature > 0 {
+		body["temperature"] = req.Temperature
+	}
+	if req.TopP > 0 {
+		body["top_p"] = req.TopP
+	}
+	if req.Stream {
+		body["stream"] = true
+	}
+
+	// System prompt (collected from system messages).
+	var sysParts []string
+	var messages []map[string]any
+	for _, m := range req.Messages {
+		switch m.Role {
+		case "system":
+			sysParts = append(sysParts, m.Content)
+		case "tool":
+			// OpenAI tool-result → Anthropic user message with tool_result block.
+			messages = append(messages, map[string]any{
+				"role": "user",
+				"content": []map[string]any{{
+					"type":        "tool_result",
+					"tool_use_id": m.ToolCallID,
+					"content":     m.Content,
+				}},
+			})
+		case "assistant":
+			if len(m.ToolCalls) > 0 {
+				var calls []openAIToolCall
+				if err := json.Unmarshal(m.ToolCalls, &calls); err == nil && len(calls) > 0 {
+					blocks := []map[string]any{}
+					if strings.TrimSpace(m.Content) != "" {
+						blocks = append(blocks, map[string]any{"type": "text", "text": m.Content})
+					}
+					for _, c := range calls {
+						var input any
+						if c.Function.Arguments != "" {
+							_ = json.Unmarshal([]byte(c.Function.Arguments), &input)
+						}
+						if input == nil {
+							input = map[string]any{}
+						}
+						blocks = append(blocks, map[string]any{
+							"type":  "tool_use",
+							"id":    c.ID,
+							"name":  c.Function.Name,
+							"input": input,
+						})
+					}
+					messages = append(messages, map[string]any{"role": "assistant", "content": blocks})
+					continue
+				}
+			}
+			messages = append(messages, map[string]any{"role": "assistant", "content": m.Content})
+		case "user":
+			messages = append(messages, map[string]any{"role": "user", "content": m.Content})
+		}
+	}
+	if len(sysParts) > 0 {
+		body["system"] = strings.Join(sysParts, "\n\n")
+	}
+	body["messages"] = messages
+
+	// Tools: OpenAI function specs → Anthropic tool specs.
+	if len(req.Tools) > 0 && string(req.Tools) != "null" {
+		var oaTools []openAIToolFn
+		if err := json.Unmarshal(req.Tools, &oaTools); err == nil {
+			var anthTools []map[string]any
+			for _, t := range oaTools {
+				if t.Function.Name == "" {
+					continue
+				}
+				schema := t.Function.Parameters
+				if len(schema) == 0 || string(schema) == "null" {
+					schema = json.RawMessage(`{"type":"object","properties":{}}`)
+				}
+				anthTools = append(anthTools, map[string]any{
+					"name":         t.Function.Name,
+					"description":  t.Function.Description,
+					"input_schema": schema,
+				})
+			}
+			if len(anthTools) > 0 {
+				body["tools"] = anthTools
+			}
+		}
+		// tool_choice mapping
+		if tc := convertToolChoice(req.ToolChoice); tc != nil {
+			body["tool_choice"] = tc
+		}
+	}
+	return json.Marshal(body)
+}
+
+// convertToolChoice — OpenAI tool_choice → Anthropic tool_choice.
+//   "auto"/"none"            → {"type":"auto"} / omit
+//   "required"               → {"type":"any"}
+//   {function:{name:"x"}}    → {"type":"tool","name":"x"}
+func convertToolChoice(raw json.RawMessage) map[string]any {
+	if len(raw) == 0 || string(raw) == "null" {
+		return nil
+	}
+	var s string
+	if json.Unmarshal(raw, &s) == nil {
+		switch s {
+		case "auto":
+			return map[string]any{"type": "auto"}
+		case "required":
+			return map[string]any{"type": "any"}
+		case "none":
+			return nil
+		}
+	}
+	var obj struct {
+		Type     string `json:"type"`
+		Function struct {
+			Name string `json:"name"`
+		} `json:"function"`
+	}
+	if json.Unmarshal(raw, &obj) == nil && obj.Function.Name != "" {
+		return map[string]any{"type": "tool", "name": obj.Function.Name}
+	}
+	return nil
+}
+
+// anthropicRichResponse — Anthropic response including tool_use blocks.
+type anthropicRichResponse struct {
+	ID      string `json:"id"`
+	Content []struct {
+		Type  string          `json:"type"`
+		Text  string          `json:"text"`
+		ID    string          `json:"id"`
+		Name  string          `json:"name"`
+		Input json.RawMessage `json:"input"`
+	} `json:"content"`
+	Model      string `json:"model"`
+	StopReason string `json:"stop_reason"`
+	Usage      struct {
+		InputTokens  int `json:"input_tokens"`
+		OutputTokens int `json:"output_tokens"`
+	} `json:"usage"`
+}
+
+// parseAnthropicToolResponse — convert Anthropic response (with possible
+// tool_use blocks) → OpenAI response carrying message.tool_calls.
+func parseAnthropicToolResponse(respBody []byte, reqModel string) (*OpenAIResponse, error) {
+	var ar anthropicRichResponse
+	if err := json.Unmarshal(respBody, &ar); err != nil {
+		return nil, fmt.Errorf("parse anthropic rich: %w", err)
+	}
+	var textParts []string
+	var toolCalls []map[string]any
+	for _, c := range ar.Content {
+		switch c.Type {
+		case "text":
+			textParts = append(textParts, c.Text)
+		case "tool_use":
+			args := "{}"
+			if len(c.Input) > 0 {
+				args = string(c.Input)
+			}
+			toolCalls = append(toolCalls, map[string]any{
+				"id":   c.ID,
+				"type": "function",
+				"function": map[string]any{
+					"name":      c.Name,
+					"arguments": args,
+				},
+			})
+		}
+	}
+	finish := "stop"
+	switch ar.StopReason {
+	case "max_tokens":
+		finish = "length"
+	case "tool_use":
+		finish = "tool_calls"
+	}
+	msg := map[string]any{
+		"role":    "assistant",
+		"content": strings.Join(textParts, ""),
+	}
+	if len(toolCalls) > 0 {
+		msg["tool_calls"] = toolCalls
+		if msg["content"] == "" {
+			msg["content"] = nil
+		}
+	}
+	// Build OpenAIResponse via raw map → marshal → unmarshal to keep the
+	// public struct authoritative while carrying tool_calls through.
+	out := map[string]any{
+		"id":      ar.ID,
+		"object":  "chat.completion",
+		"created": time.Now().Unix(),
+		"model":   reqModel,
+		"choices": []map[string]any{{
+			"index":         0,
+			"message":       msg,
+			"finish_reason": finish,
+		}},
+		"usage": map[string]any{
+			"prompt_tokens":     ar.Usage.InputTokens,
+			"completion_tokens": ar.Usage.OutputTokens,
+			"total_tokens":      ar.Usage.InputTokens + ar.Usage.OutputTokens,
+		},
+	}
+	raw, _ := json.Marshal(out)
+	var resp OpenAIResponse
+	if err := json.Unmarshal(raw, &resp); err != nil {
+		return nil, err
+	}
+	// tool_calls land in resp.Choices[0].Message.ToolCalls (json.RawMessage
+	// field added to OpenAIMessage), so the typed struct round-trips cleanly.
+	return &resp, nil
+}
