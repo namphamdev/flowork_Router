@@ -22,9 +22,17 @@ var (
 	proxyCursor = map[string]int{}
 )
 
-// outboundClient returns the HTTP client for upstream provider calls, proxied
-// through the first active pool when one is configured, else direct. ctx
-// carries the client identity used for sticky affinity.
+// outboundClient returns the HTTP client for upstream provider calls.
+// Resolution order:
+//
+//  1. Active DB-configured proxy pool — wins so operators can pin egress IPs.
+//  2. Plain httpClient — uses Go's http.DefaultTransport which honours the
+//     standard HTTP_PROXY / HTTPS_PROXY / NO_PROXY environment variables
+//     out of the box (no extra code required). Set HTTP_PROXY before
+//     starting flow_router to route all upstream traffic through a
+//     corporate proxy; set NO_PROXY to whitelist hosts that should bypass.
+//
+// ctx carries the client identity used for sticky affinity within a pool.
 func outboundClient(ctx context.Context) *http.Client {
 	if u := pickProxyURL(ctx); u != "" {
 		return clientForProxy(u)
