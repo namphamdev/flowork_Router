@@ -123,6 +123,10 @@ func registerManagementRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/media-providers", mediaProvidersHandler)
 	mux.HandleFunc("/api/media-providers/tts", mediaTTSHandler)
 	mux.HandleFunc("/api/media-providers/tts/voices", ttsVoicesHandler)
+	mux.HandleFunc("/api/media-providers/tts/deepgram/voices", deepgramVoicesHandler)
+	mux.HandleFunc("/api/media-providers/tts/elevenlabs/voices", elevenlabsVoicesHandler)
+	mux.HandleFunc("/api/media-providers/tts/inworld/voices", inworldVoicesHandler)
+	mux.HandleFunc("/api/media-providers/tts/minimax/voices", minimaxVoicesHandler)
 	mux.HandleFunc("/api/media-providers/", mediaProviderCRUDHandler)
 	// Skills, keys, logs
 	mux.HandleFunc("/api/skills", skillsListAddHandler)
