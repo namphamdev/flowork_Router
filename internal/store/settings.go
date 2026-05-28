@@ -235,15 +235,18 @@ func LoadSettings(d *sql.DB) (*Settings, error) {
 	if !s.ClaudeCliBypass.Enabled && len(s.ClaudeCliBypass.SkipPatterns) == 0 && !s.ClaudeCliBypass.CcFilterNaming {
 		s.ClaudeCliBypass = defaultSettings().ClaudeCliBypass
 	}
-	// Brain — fill the always-on / constitution knobs (added later) when
-	// they read back as the natural zero from a pre-existing settings row.
+	// Brain migration: fill always-on / constitution knobs when they read
+	// back as the natural zero from a pre-existing settings row.
 	//
-	// Detection signal: ConstitutionTopK and ConstitutionMaxChars are new
-	// fields; if they're both still zero the JSON row pre-dates the new
-	// fields entirely. In that case the AlwaysOn / InjectConstitution /
-	// Skills booleans are also "absent in JSON" → safe to apply defaults.
-	// Rows that were saved AFTER the migration always carry non-zero
-	// ConstitutionTopK so their explicit boolean choices are preserved.
+	// Two signals are checked because an EARLIER broken migration partially
+	// populated some fields without flipping the booleans:
+	//
+	//   (a) ConstitutionTopK + ConstitutionMaxChars both zero → row predates
+	//       the migration entirely. Apply all four boolean defaults.
+	//   (b) AlwaysOn + InjectConstitution + Skills ALL three false (regardless
+	//       of Enabled or ConstitutionTopK) → the new sub-features were never
+	//       deliberately opted in by the user (asking for all three off at
+	//       once is an extremely rare configuration). Patch them to defaults.
 	preMigration := s.Brain.ConstitutionTopK == 0 && s.Brain.ConstitutionMaxChars == 0
 	if s.Brain.ConstitutionTopK == 0 {
 		s.Brain.ConstitutionTopK = defaultSettings().Brain.ConstitutionTopK
@@ -254,15 +257,20 @@ func LoadSettings(d *sql.DB) (*Settings, error) {
 	if s.Brain.SkillTopK == 0 {
 		s.Brain.SkillTopK = defaultSettings().Brain.SkillTopK
 	}
-	if preMigration {
-		// Row pre-dates the new fields → restore the recommended defaults
-		// regardless of what Enabled / Skills / AlwaysOn / InjectConstitution
-		// read back as (they were all absent in the old JSON shape).
+	allNewBooleansFalse := !s.Brain.AlwaysOn && !s.Brain.InjectConstitution && !s.Brain.Skills
+	if preMigration || allNewBooleansFalse {
+		// Row pre-dates the new fields OR was partially migrated by an
+		// earlier buggy pass that set the int fields without flipping the
+		// booleans. Restore the recommended defaults for the new sub-features.
+		// Enabled is left alone (it has been user-visible from day one, so a
+		// false reading is a deliberate choice we respect).
 		d := defaultSettings().Brain
-		s.Brain.Enabled = d.Enabled
 		s.Brain.AlwaysOn = d.AlwaysOn
 		s.Brain.InjectConstitution = d.InjectConstitution
 		s.Brain.Skills = d.Skills
+		if preMigration {
+			s.Brain.Enabled = d.Enabled
+		}
 	}
 	return &s, nil
 }
