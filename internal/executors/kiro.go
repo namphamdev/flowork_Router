@@ -40,9 +40,29 @@ func (k *kiroExecutor) headers(p *store.ProviderConnection) map[string]string {
 
 // kiroBody translates OpenAI messages to Kiro's conversationState shape: the
 // last user message goes into currentMessage, the rest into history.
+//
+// Synthetic suffixes on r.Model (-thinking / -agentic / -thinking-agentic)
+// are stripped before the request leaves this process — Kiro upstream only
+// accepts the base model id. The agentic flavour additionally prepends the
+// chunked-write system prompt to history so the model self-throttles
+// large writes (Kiro upstream times out around 2-3 min for big edits).
 func kiroBody(r Request) []byte {
+	isAgentic := IsKiroAgenticModel(r.Model)
+	resolvedModel := ResolveKiroModel(r.Model)
+
 	var history []map[string]any
 	var current map[string]any
+
+	// Agentic variant: prepend the chunked-write protocol as a system turn.
+	if isAgentic {
+		history = append(history, map[string]any{
+			"role": "system",
+			"content": []map[string]any{
+				{"type": "text", "text": KiroAgenticSystemPrompt},
+			},
+		})
+	}
+
 	for i, m := range r.Messages {
 		entry := map[string]any{"role": m.Role, "content": []map[string]any{{"type": "text", "text": m.Content}}}
 		if i == len(r.Messages)-1 && m.Role == "user" {
@@ -56,7 +76,7 @@ func kiroBody(r Request) []byte {
 			"chatTriggerType": "MANUAL",
 			"history":         history,
 			"currentMessage":  current,
-			"modelId":         r.Model,
+			"modelId":         resolvedModel,
 		},
 	})
 	return body
