@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/flowork-os/flowork_Router/internal/executors"
+	"github.com/flowork-os/flowork_Router/internal/safego"
 	"github.com/flowork-os/flowork_Router/internal/store"
 )
 
@@ -127,8 +128,11 @@ func DispatchChatCompletionStream(ctx context.Context, req OpenAIRequest, w http
 		latencyMs := time.Since(t0).Milliseconds()
 		usage = u
 
-		// Log usage best-effort
-		go logUsageStream(keyID, p.ID, req.Model, &u, st, err, latencyMs)
+		// Log usage best-effort (panic-recovered so a logging bug can't crash
+		// the streaming dispatcher).
+		safego.GoLabel("logUsageStream", func() {
+			logUsageStream(keyID, p.ID, req.Model, &u, st, err, latencyMs)
+		})
 
 		if err == nil {
 			return st, u, nil
@@ -268,12 +272,14 @@ func streamOpenAICompat(ctx context.Context, p *store.ProviderConnection, baseUR
 }
 
 // Anthropic streaming events we care about:
-//   message_start         → emit role:"assistant" start chunk
-//   content_block_delta   → emit OpenAI delta.content
-//   message_delta         → carries stop_reason + usage.output_tokens
-//   message_stop          → emit final chunk with finish_reason + [DONE]
-//   ping                  → ignore (keepalive)
-//   error                 → propagate as SSE error event
+//
+//	message_start         → emit role:"assistant" start chunk
+//	content_block_delta   → emit OpenAI delta.content
+//	message_delta         → carries stop_reason + usage.output_tokens
+//	message_stop          → emit final chunk with finish_reason + [DONE]
+//	ping                  → ignore (keepalive)
+//	error                 → propagate as SSE error event
+//
 // Ref: https://docs.anthropic.com/en/api/messages-streaming
 func streamAnthropic(ctx context.Context, p *store.ProviderConnection, baseURL string, req OpenAIRequest, w http.ResponseWriter, flusher http.Flusher) (OpenAIUsage, int, error) {
 	anthrReq := AnthropicRequest{
@@ -346,8 +352,8 @@ func streamAnthropic(ctx context.Context, p *store.ProviderConnection, baseURL s
 			continue
 		}
 		var ev struct {
-			Type    string `json:"type"`
-			Delta   struct {
+			Type  string `json:"type"`
+			Delta struct {
 				Type       string `json:"type"`
 				Text       string `json:"text"`
 				StopReason string `json:"stop_reason"`

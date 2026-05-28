@@ -86,12 +86,24 @@ func tunnelEnableHandler(w http.ResponseWriter, r *http.Request) {
 	if body.Port == 0 {
 		body.Port = 2402
 	}
+	if body.Port < 1 || body.Port > 65535 {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "port out of range (1-65535)"})
+		return
+	}
 	target := fmt.Sprintf("http://127.0.0.1:%d", body.Port)
 	cmd := exec.Command("cloudflared", "tunnel", "--no-autoupdate", "--url", target)
 	stdoutPipe, _ := cmd.StdoutPipe()
 	stderrPipe, _ := cmd.StderrPipe()
 	if err := cmd.Start(); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "spawn: " + err.Error()})
+		// Spawn failed — the pipes never got attached to a live process, so
+		// close them explicitly to release the kernel fds.
+		if stdoutPipe != nil {
+			_ = stdoutPipe.Close()
+		}
+		if stderrPipe != nil {
+			_ = stderrPipe.Close()
+		}
+		writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "spawn cloudflared"})
 		return
 	}
 	cloudflaredCmd = cmd

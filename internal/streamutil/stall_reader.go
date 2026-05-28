@@ -33,12 +33,12 @@ var ErrStreamStall = errors.New("stream stalled: no data within timeout")
 // returns, subsequent reads return ErrStreamStall and the underlying
 // source is closed.
 type StallReader struct {
-	src      io.ReadCloser
-	timeout  time.Duration
-	mu       sync.Mutex
-	stalled  atomic.Bool
-	closed   atomic.Bool
-	cancel   chan struct{} // closed when Close() is called; halts the watchdog
+	src     io.ReadCloser
+	timeout time.Duration
+	mu      sync.Mutex
+	stalled atomic.Bool
+	closed  atomic.Bool
+	cancel  chan struct{} // closed when Close() is called; halts the watchdog
 }
 
 // NewStallReader wraps src with the given inactivity timeout. A non-positive
@@ -62,13 +62,11 @@ func (r *StallReader) Read(p []byte) (int, error) {
 		return r.src.Read(p)
 	}
 
-	// Watchdog: separate goroutine that closes the source if Read hasn't
-	// returned within the timeout. We do NOT cancel the goroutine on success
-	// — instead we use a done channel so it exits cleanly.
-	done := make(chan struct{})
-	var timer *time.Timer
-	timer = time.AfterFunc(r.timeout, func() {
-		// Only the FIRST stall fires the close + flag flip.
+	// Watchdog: AfterFunc schedules the close callback on a runtime goroutine
+	// that exits as soon as it fires (or is stopped). Stop() races safely with
+	// the callback — if the timer already fired, Stop returns false and the
+	// stalled flag has already been set.
+	timer := time.AfterFunc(r.timeout, func() {
 		if !r.stalled.CompareAndSwap(false, true) {
 			return
 		}
@@ -77,7 +75,6 @@ func (r *StallReader) Read(p []byte) (int, error) {
 
 	n, err := r.src.Read(p)
 	timer.Stop()
-	close(done)
 
 	if r.stalled.Load() {
 		return n, ErrStreamStall
