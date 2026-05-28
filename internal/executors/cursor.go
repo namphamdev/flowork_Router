@@ -27,21 +27,37 @@ func (c *cursorExecutor) endpoint(p *store.ProviderConnection) string {
 }
 
 func (c *cursorExecutor) headers(p *store.ProviderConnection) map[string]string {
-	h := map[string]string{
-		"Accept":            "*/*",
-		"x-ghost-mode":      "false",
-		"x-client-key":      "upstream",
+	tok, _ := p.Data[store.CfgAPIKey].(string)
+	machineID, _ := p.Data["machineId"].(string)
+	storedChecksum, _ := p.Data["cursorChecksum"].(string)
+	storedSession, _ := p.Data["sessionId"].(string)
+
+	// Auto-bundle path: when the operator gave us a token but no manually-
+	// scraped checksum, derive everything Cursor's ConnectRPC endpoint
+	// requires from the token + machineId (Jyh cipher on the timestamp).
+	if tok != "" && storedChecksum == "" {
+		h := BuildCursorHeaders(tok, machineID, false)
+		h["Accept"] = "*/*"
+		if storedSession != "" {
+			h["x-cursor-session-id"] = storedSession
+		}
+		return h
 	}
-	if tok, ok := p.Data[store.CfgAPIKey].(string); ok && tok != "" {
-		// Cursor sends the session token via the Cookie header — bearer also
-		// works for the OpenAI-compat passthrough endpoint when configured.
+
+	// Manual-checksum path — preserved for users who pasted the value.
+	h := map[string]string{
+		"Accept":       "*/*",
+		"x-ghost-mode": "false",
+		"x-client-key": "upstream",
+	}
+	if tok != "" {
 		h["Authorization"] = "Bearer " + tok
 	}
-	if checksum, ok := p.Data["cursorChecksum"].(string); ok && checksum != "" {
-		h["x-cursor-checksum"] = checksum
+	if storedChecksum != "" {
+		h["x-cursor-checksum"] = storedChecksum
 	}
-	if sid, ok := p.Data["sessionId"].(string); ok && sid != "" {
-		h["x-cursor-session-id"] = sid
+	if storedSession != "" {
+		h["x-cursor-session-id"] = storedSession
 	}
 	return h
 }

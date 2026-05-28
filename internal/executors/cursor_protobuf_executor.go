@@ -29,20 +29,41 @@ func (c *cursorProtoExecutor) endpoint(p *store.ProviderConnection) string {
 }
 
 func (c *cursorProtoExecutor) headers(p *store.ProviderConnection) map[string]string {
-	h := map[string]string{
-		"Content-Type":      "application/connect+proto",
-		"Connect-Protocol":  "1",
-		"x-ghost-mode":      "false",
-		"x-client-key":      "flow-router",
+	tok, _ := p.Data[store.CfgAPIKey].(string)
+	machineID, _ := p.Data["machineId"].(string)
+	storedChecksum, _ := p.Data["cursorChecksum"].(string)
+	storedSession, _ := p.Data["sessionId"].(string)
+
+	// Cursor ConnectRPC requires the full Jyh-derived header bundle —
+	// authorization + checksum + session + client-key + several version
+	// fields. Auto-generate when the operator gave us a token but no
+	// manually-scraped checksum.
+	if tok != "" && storedChecksum == "" {
+		h := BuildCursorHeaders(tok, machineID, false)
+		// The proto executor needs Connect-Protocol + the proto content type
+		// — BuildCursorHeaders already sets application/connect+proto.
+		h["Connect-Protocol"] = "1"
+		if storedSession != "" {
+			h["x-cursor-session-id"] = storedSession
+		}
+		return h
 	}
-	if tok, ok := p.Data[store.CfgAPIKey].(string); ok && tok != "" {
+
+	// Manual-checksum back-compat path.
+	h := map[string]string{
+		"Content-Type":     "application/connect+proto",
+		"Connect-Protocol": "1",
+		"x-ghost-mode":     "false",
+		"x-client-key":     "flow-router",
+	}
+	if tok != "" {
 		h["Authorization"] = "Bearer " + tok
 	}
-	if cs, ok := p.Data["cursorChecksum"].(string); ok && cs != "" {
-		h["x-cursor-checksum"] = cs
+	if storedChecksum != "" {
+		h["x-cursor-checksum"] = storedChecksum
 	}
-	if sid, ok := p.Data["sessionId"].(string); ok && sid != "" {
-		h["x-cursor-session-id"] = sid
+	if storedSession != "" {
+		h["x-cursor-session-id"] = storedSession
 	}
 	return h
 }
