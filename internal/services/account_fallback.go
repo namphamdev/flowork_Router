@@ -30,18 +30,37 @@ type ErrorRule struct {
 	CooldownMs int64  // fixed cooldown (ignored when Backoff=true)
 }
 
-// ErrorRules — top-down matching, first hit wins. Mirrors upstream defaults.
+// Cooldown helpers — named constants so the rule table stays scannable.
+var (
+	cooldownShort = int64(15 * time.Second / time.Millisecond)
+	cooldownMed   = int64(60 * time.Second / time.Millisecond)
+	cooldownLong  = int64(5 * time.Minute / time.Millisecond)
+)
+
+// ErrorRules — top-down matching, first hit wins. Text rules are checked
+// first (more specific than bare status codes) followed by status rules.
+// Order matters when the same error matches multiple patterns.
 var ErrorRules = []ErrorRule{
-	{Status: 429, Backoff: true},
+	// --- Text-based rules (specific, checked first) ---
+	{Text: "no credentials", CooldownMs: cooldownLong},
+	{Text: "request not allowed", CooldownMs: cooldownShort},
+	{Text: "improperly formed request", CooldownMs: cooldownLong},
 	{Text: "rate limit", Backoff: true},
-	{Text: "quota exceeded", Backoff: true},
 	{Text: "too many requests", Backoff: true},
-	{Status: 401, CooldownMs: int64(60 * time.Second / time.Millisecond)},
-	{Status: 403, CooldownMs: int64(60 * time.Second / time.Millisecond)},
-	{Status: 500, CooldownMs: int64(15 * time.Second / time.Millisecond)},
-	{Status: 502, CooldownMs: int64(15 * time.Second / time.Millisecond)},
-	{Status: 503, CooldownMs: int64(15 * time.Second / time.Millisecond)},
-	{Status: 504, CooldownMs: int64(15 * time.Second / time.Millisecond)},
+	{Text: "quota exceeded", Backoff: true},
+	{Text: "capacity", Backoff: true},
+	{Text: "overloaded", Backoff: true},
+
+	// --- Status-based rules ---
+	{Status: 401, CooldownMs: cooldownLong}, // unauthorized — long cool-off (creds likely expired)
+	{Status: 402, CooldownMs: cooldownLong}, // payment required — long cool-off
+	{Status: 403, CooldownMs: cooldownLong}, // forbidden — long cool-off
+	{Status: 404, CooldownMs: cooldownLong}, // not found — model gone, don't retry quickly
+	{Status: 429, Backoff: true},            // rate limit — exponential
+	{Status: 500, CooldownMs: cooldownShort},
+	{Status: 502, CooldownMs: cooldownShort},
+	{Status: 503, CooldownMs: cooldownShort},
+	{Status: 504, CooldownMs: cooldownShort},
 }
 
 // FallbackDecision is the output of CheckFallbackError.
