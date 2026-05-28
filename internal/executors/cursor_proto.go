@@ -43,11 +43,11 @@ const (
 	cfUnifiedName   = 54
 
 	// ConversationMessage
-	cfMsgContent       = 1
-	cfMsgRole          = 2
-	cfMsgID            = 13
-	cfMsgIsAgentic     = 29
-	cfMsgUnifiedMode   = 47
+	cfMsgContent     = 1
+	cfMsgRole        = 2
+	cfMsgID          = 13
+	cfMsgIsAgentic   = 29
+	cfMsgUnifiedMode = 47
 
 	// StreamUnifiedChatResponse (extractText scan targets)
 	cfResponseText = 1

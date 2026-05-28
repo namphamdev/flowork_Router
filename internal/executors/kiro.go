@@ -26,7 +26,7 @@ func (k *kiroExecutor) endpoint(p *store.ProviderConnection) string {
 
 func (k *kiroExecutor) headers(p *store.ProviderConnection) map[string]string {
 	h := map[string]string{
-		"Accept":            "text/event-stream",
+		"Accept":                "text/event-stream",
 		"amz-sdk-invocation-id": "flow-router",
 	}
 	if tok, ok := p.Data[store.CfgAPIKey].(string); ok && tok != "" {

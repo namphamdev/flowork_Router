@@ -16,21 +16,21 @@ import (
 // di future untuk Anthropic header).
 type CredentialsFile struct {
 	ClaudeAiOauth struct {
-		AccessToken      string `json:"accessToken"`
-		RefreshToken     string `json:"refreshToken"`
-		ExpiresAt        int64  `json:"expiresAt"`
+		AccessToken      string   `json:"accessToken"`
+		RefreshToken     string   `json:"refreshToken"`
+		ExpiresAt        int64    `json:"expiresAt"`
 		Scopes           []string `json:"scopes"`
-		SubscriptionType string `json:"subscriptionType"`
-		RateLimitTier    string `json:"rateLimitTier"`
+		SubscriptionType string   `json:"subscriptionType"`
+		RateLimitTier    string   `json:"rateLimitTier"`
 	} `json:"claudeAiOauth"`
 	OrganizationUUID string `json:"organizationUuid"`
 }
 
 var (
-	cachedMu        sync.Mutex
-	cachedCreds     *CredentialsFile
-	cachedLoadedAt  time.Time
-	cacheValidity   = 30 * time.Second // re-read disk every 30s max
+	cachedMu       sync.Mutex
+	cachedCreds    *CredentialsFile
+	cachedLoadedAt time.Time
+	cacheValidity  = 30 * time.Second // re-read disk every 30s max
 )
 
 // credentialsPath returns the canonical path. Override via FLOW_CREDS_PATH env

@@ -17,8 +17,8 @@ import (
 type APIKey struct {
 	ID               string    `json:"id"`
 	Name             string    `json:"name"`
-	KeyHash          string    `json:"-"`               // never expose hash
-	KeyPrefix        string    `json:"keyPrefix"`       // e.g. "flr_abc1..."
+	KeyHash          string    `json:"-"`                      // never expose hash
+	KeyPrefix        string    `json:"keyPrefix"`              // e.g. "flr_abc1..."
 	PlaintextKey     string    `json:"plaintextKey,omitempty"` // ONLY on create, never re-read
 	AllowedProviders string    `json:"allowedProviders"`
 	DailyCapUsd      float64   `json:"dailyCapUsd"`

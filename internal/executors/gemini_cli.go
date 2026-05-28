@@ -30,8 +30,8 @@ func (g *geminiCLIExecutor) endpoint(p *store.ProviderConnection, stream bool) s
 
 func (g *geminiCLIExecutor) headers(p *store.ProviderConnection, stream bool) map[string]string {
 	h := map[string]string{
-		"User-Agent":          "GeminiCLI/0.1.7",
-		"X-Goog-Api-Client":   "gl-node/22.10.0",
+		"User-Agent":        "GeminiCLI/0.1.7",
+		"X-Goog-Api-Client": "gl-node/22.10.0",
 	}
 	if tok, ok := p.Data[store.CfgAPIKey].(string); ok && tok != "" {
 		h["Authorization"] = "Bearer " + tok

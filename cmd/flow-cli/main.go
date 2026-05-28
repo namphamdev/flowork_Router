@@ -117,11 +117,13 @@ func cmdProviders() error {
 	}
 	if err := json.Unmarshal(body, &arr); err != nil {
 		// /api/providers may return {data: [...]} or [...] depending on path
-		var wrap struct{ Data []struct {
-			ID, Name, Provider string
-			IsActive           bool
-			Priority           int
-		} `json:"data"` }
+		var wrap struct {
+			Data []struct {
+				ID, Name, Provider string
+				IsActive           bool
+				Priority           int
+			} `json:"data"`
+		}
 		if err2 := json.Unmarshal(body, &wrap); err2 != nil {
 			return fmt.Errorf("parse providers: %w (raw: %s)", err, head(body))
 		}

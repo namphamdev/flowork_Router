@@ -11,24 +11,24 @@ import (
 
 // QuotaStatus — per-provider quota snapshot.
 type QuotaStatus struct {
-	ProviderID       string  `json:"providerId"`
-	ProviderName     string  `json:"providerName"`
-	Provider         string  `json:"provider"`         // type (anthropic, openai, etc)
-	AuthType         string  `json:"authType"`
-	SubscriptionTier string  `json:"subscriptionTier,omitempty"`
+	ProviderID       string `json:"providerId"`
+	ProviderName     string `json:"providerName"`
+	Provider         string `json:"provider"` // type (anthropic, openai, etc)
+	AuthType         string `json:"authType"`
+	SubscriptionTier string `json:"subscriptionTier,omitempty"`
 
-	TodayRequests    int64   `json:"todayRequests"`
-	TodayPromptTok   int64   `json:"todayPromptTok"`
-	TodayComplTok    int64   `json:"todayComplTok"`
-	TodayCostUsd     float64 `json:"todayCostUsd"`
+	TodayRequests  int64   `json:"todayRequests"`
+	TodayPromptTok int64   `json:"todayPromptTok"`
+	TodayComplTok  int64   `json:"todayComplTok"`
+	TodayCostUsd   float64 `json:"todayCostUsd"`
 
-	WeekRequests     int64   `json:"weekRequests"`
-	WeekPromptTok    int64   `json:"weekPromptTok"`
-	WeekComplTok     int64   `json:"weekComplTok"`
-	WeekCostUsd      float64 `json:"weekCostUsd"`
+	WeekRequests  int64   `json:"weekRequests"`
+	WeekPromptTok int64   `json:"weekPromptTok"`
+	WeekComplTok  int64   `json:"weekComplTok"`
+	WeekCostUsd   float64 `json:"weekCostUsd"`
 
-	MonthRequests    int64   `json:"monthRequests"`
-	MonthCostUsd     float64 `json:"monthCostUsd"`
+	MonthRequests int64   `json:"monthRequests"`
+	MonthCostUsd  float64 `json:"monthCostUsd"`
 
 	// Quota is DERIVED from local usage (same approach as upstream): there is no
 	// live provider-side quota poll because the supported providers don't expose

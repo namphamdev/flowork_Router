@@ -17,7 +17,9 @@ type azureExecutor struct{}
 func (a *azureExecutor) Name() string { return "azure" }
 
 // endpoint composes the Azure URL:
-//   {baseURL}/openai/deployments/{deployment}/chat/completions?api-version=...
+//
+//	{baseURL}/openai/deployments/{deployment}/chat/completions?api-version=...
+//
 // deployment defaults to the model name when the provider's `deployment` config
 // is empty.
 func (a *azureExecutor) endpoint(p *store.ProviderConnection, model string) string {

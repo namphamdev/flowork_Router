@@ -49,9 +49,9 @@ func OpenAIToClaude(body map[string]any) map[string]any {
 				anthrMsgs = append(anthrMsgs, map[string]any{
 					"role": "user",
 					"content": []map[string]any{{
-						"type":         "tool_result",
-						"tool_use_id":  m["tool_call_id"],
-						"content":      content,
+						"type":        "tool_result",
+						"tool_use_id": m["tool_call_id"],
+						"content":     content,
 					}},
 				})
 			}

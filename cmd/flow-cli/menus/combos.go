@@ -25,7 +25,9 @@ type combo struct {
 }
 
 func fetchCombos(c *api.Client) ([]combo, error) {
-	var wrap struct{ Data []combo `json:"data"` }
+	var wrap struct {
+		Data []combo `json:"data"`
+	}
 	if err := c.Get("/api/combos", &wrap); err == nil && wrap.Data != nil {
 		return wrap.Data, nil
 	}

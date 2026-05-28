@@ -25,9 +25,9 @@ func localeCatalogHandler(w http.ResponseWriter, r *http.Request) {
 		tag = "en"
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"tag":          tag,
+		"tag":           tag,
 		"availableTags": i18n.AvailableTags(),
-		"strings":      i18n.Catalog(tag),
+		"strings":       i18n.Catalog(tag),
 	})
 }
 

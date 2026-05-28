@@ -336,9 +336,10 @@ func buildAnthropicToolBody(req OpenAIRequest) ([]byte, error) {
 }
 
 // convertToolChoice — OpenAI tool_choice → Anthropic tool_choice.
-//   "auto"/"none"            → {"type":"auto"} / omit
-//   "required"               → {"type":"any"}
-//   {function:{name:"x"}}    → {"type":"tool","name":"x"}
+//
+//	"auto"/"none"            → {"type":"auto"} / omit
+//	"required"               → {"type":"any"}
+//	{function:{name:"x"}}    → {"type":"tool","name":"x"}
 func convertToolChoice(raw json.RawMessage) map[string]any {
 	if len(raw) == 0 || string(raw) == "null" {
 		return nil

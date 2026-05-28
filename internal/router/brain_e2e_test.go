@@ -16,8 +16,10 @@ import (
 // the real dispatcher, gets enriched, and the INJECTED knowledge actually
 // reaches the upstream provider. Uses a mock OpenAI upstream (no Ollama needed).
 // Run isolated so the process-wide store handle points at a throwaway DB:
+//
 //	FLOW_ROUTER_DATA=$(mktemp -d) FLOW_ROUTER_BRAIN_DB=/path/brain.sqlite \
 //	  go test ./internal/router/ -run BrainE2E -v
+//
 // Skips unless both a temp FLOW_ROUTER_DATA and a real brain DB are provided,
 // so it never touches the real flow_router DB.
 func TestBrainE2E(t *testing.T) {

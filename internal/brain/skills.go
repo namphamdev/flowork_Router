@@ -12,6 +12,7 @@ import (
 // skilldata holds the behavioral skill library, embedded into the binary so the
 // brain's "skills" travel with Flow Router — any agent that hits the endpoint
 // gets the same skill set, no external files required (plug-and-play).
+//
 //go:embed skilldata/*.md
 var skilldata embed.FS
 

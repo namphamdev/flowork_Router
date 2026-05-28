@@ -13,8 +13,8 @@ type searchList struct{}
 
 var reSearchListHeader = mustCompile(`(?m)^(?:Glob|Search|Files matching) `)
 
-func (s *searchList) Name() string             { return "search-list" }
-func (s *searchList) Detect(head string) bool  { return reSearchListHeader.MatchString(head) }
+func (s *searchList) Name() string            { return "search-list" }
+func (s *searchList) Detect(head string) bool { return reSearchListHeader.MatchString(head) }
 func (s *searchList) Apply(text string) string {
 	lines := strings.Split(text, "\n")
 	if len(lines) <= 50 {

@@ -8,6 +8,7 @@ import (
 // TestLiveRetrieve exercises the bridge against a REAL Memory Palace DB.
 // It is a no-op unless FLOW_ROUTER_BRAIN_DB (or the default path) points at an
 // existing DB, so it never fails in CI or on machines without the brain.
+//
 //	FLOW_ROUTER_BRAIN_DB=/path/to/flowork-brain.sqlite go test ./internal/brain/ -run Live -v
 func TestLiveRetrieve(t *testing.T) {
 	if !Available() {

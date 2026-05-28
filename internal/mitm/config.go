@@ -29,10 +29,10 @@ var URLPatterns = map[string][]string{
 // ModelSynonyms — rawModel exact match → canonical alias.
 var ModelSynonyms = map[string]map[string]string{
 	"antigravity": {
-		"gemini-default":     "gemini-3.5-flash-low",
+		"gemini-default":      "gemini-3.5-flash-low",
 		"gemini-3.1-pro-high": "gemini-pro-agent",
-		"gemini-3-pro-high":  "gemini-pro-agent",
-		"gemini-3-pro-low":   "gemini-3.1-pro-low",
+		"gemini-3-pro-high":   "gemini-pro-agent",
+		"gemini-3-pro-low":    "gemini-3.1-pro-low",
 	},
 }
 

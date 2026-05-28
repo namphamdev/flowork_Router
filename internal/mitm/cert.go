@@ -28,12 +28,12 @@ const (
 // CertManager hands out tls.Certificate values keyed by Server Name (SNI).
 // Concurrency-safe; per-domain leaves are cached on disk + in memory.
 type CertManager struct {
-	dir       string
-	rootCert  *x509.Certificate
-	rootKey   *rsa.PrivateKey
-	rootPEM   []byte // for OS keychain install
-	cacheMu   sync.RWMutex
-	cache     map[string]*tls.Certificate
+	dir      string
+	rootCert *x509.Certificate
+	rootKey  *rsa.PrivateKey
+	rootPEM  []byte // for OS keychain install
+	cacheMu  sync.RWMutex
+	cache    map[string]*tls.Certificate
 }
 
 // NewCertManager loads (or creates on first use) the root CA under <dir>/mitm.

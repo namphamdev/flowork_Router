@@ -21,19 +21,19 @@ var grokModelMap = map[string]struct {
 	ModelMode  string
 	IsThinking bool
 }{
-	"grok-3":           {"grok-3", "MODEL_MODE_GROK_3", false},
-	"grok-3-mini":      {"grok-3", "MODEL_MODE_GROK_3_MINI_THINKING", true},
-	"grok-3-thinking":  {"grok-3", "MODEL_MODE_GROK_3_THINKING", true},
-	"grok-4":           {"grok-4", "MODEL_MODE_GROK_4", false},
-	"grok-4-mini":      {"grok-4-mini", "MODEL_MODE_GROK_4_MINI_THINKING", true},
-	"grok-4-thinking":  {"grok-4", "MODEL_MODE_GROK_4_THINKING", true},
-	"grok-4-heavy":     {"grok-4", "MODEL_MODE_HEAVY", true},
-	"grok-4.1-mini":    {"grok-4-1-thinking-1129", "MODEL_MODE_GROK_4_1_MINI_THINKING", true},
-	"grok-4.1-fast":    {"grok-4-1-thinking-1129", "MODEL_MODE_FAST", false},
-	"grok-4.1-expert":  {"grok-4-1-thinking-1129", "MODEL_MODE_EXPERT", true},
+	"grok-3":            {"grok-3", "MODEL_MODE_GROK_3", false},
+	"grok-3-mini":       {"grok-3", "MODEL_MODE_GROK_3_MINI_THINKING", true},
+	"grok-3-thinking":   {"grok-3", "MODEL_MODE_GROK_3_THINKING", true},
+	"grok-4":            {"grok-4", "MODEL_MODE_GROK_4", false},
+	"grok-4-mini":       {"grok-4-mini", "MODEL_MODE_GROK_4_MINI_THINKING", true},
+	"grok-4-thinking":   {"grok-4", "MODEL_MODE_GROK_4_THINKING", true},
+	"grok-4-heavy":      {"grok-4", "MODEL_MODE_HEAVY", true},
+	"grok-4.1-mini":     {"grok-4-1-thinking-1129", "MODEL_MODE_GROK_4_1_MINI_THINKING", true},
+	"grok-4.1-fast":     {"grok-4-1-thinking-1129", "MODEL_MODE_FAST", false},
+	"grok-4.1-expert":   {"grok-4-1-thinking-1129", "MODEL_MODE_EXPERT", true},
 	"grok-4.1-thinking": {"grok-4-1-thinking-1129", "MODEL_MODE_GROK_4_1_THINKING", true},
-	"grok-4.2":         {"grok-420", "MODEL_MODE_GROK_420", false},
-	"grok-4.20":        {"grok-420", "MODEL_MODE_GROK_420", false},
+	"grok-4.2":          {"grok-420", "MODEL_MODE_GROK_420", false},
+	"grok-4.20":         {"grok-420", "MODEL_MODE_GROK_420", false},
 }
 
 func (g *grokWebExecutor) endpoint(p *store.ProviderConnection) string {
@@ -68,12 +68,12 @@ func (g *grokWebExecutor) body(req Request) []byte {
 		}
 	}
 	out := map[string]any{
-		"message":          prompt,
-		"modelName":        m.GrokModel,
-		"modelMode":        m.ModelMode,
-		"isPreset":         false,
-		"isReasoning":      m.IsThinking,
-		"returnImageBytes": false,
+		"message":               prompt,
+		"modelName":             m.GrokModel,
+		"modelMode":             m.ModelMode,
+		"isPreset":              false,
+		"isReasoning":           m.IsThinking,
+		"returnImageBytes":      false,
 		"returnRawGrokResponse": false,
 	}
 	b, _ := json.Marshal(out)

@@ -4,12 +4,12 @@ import "testing"
 
 func TestIsOpenAICompatible(t *testing.T) {
 	cases := map[string]bool{
-		"":                                false,
-		"openai":                          false,
-		"openai-compatible-groq":          true,
-		"openai-compatible-fireworks":     true,
-		"openai-compatible-x-responses":   true,
-		"anthropic-compatible-aws":        false,
+		"":                              false,
+		"openai":                        false,
+		"openai-compatible-groq":        true,
+		"openai-compatible-fireworks":   true,
+		"openai-compatible-x-responses": true,
+		"anthropic-compatible-aws":      false,
 	}
 	for in, want := range cases {
 		if got := IsOpenAICompatible(in); got != want {
@@ -20,11 +20,11 @@ func TestIsOpenAICompatible(t *testing.T) {
 
 func TestIsAnthropicCompatible(t *testing.T) {
 	cases := map[string]bool{
-		"anthropic":                      false,
-		"anthropic-compatible-aws":       true,
-		"anthropic-compatible-vertex":    true,
-		"openai-compatible-x":            false,
-		"":                               false,
+		"anthropic":                   false,
+		"anthropic-compatible-aws":    true,
+		"anthropic-compatible-vertex": true,
+		"openai-compatible-x":         false,
+		"":                            false,
 	}
 	for in, want := range cases {
 		if got := IsAnthropicCompatible(in); got != want {
@@ -35,11 +35,11 @@ func TestIsAnthropicCompatible(t *testing.T) {
 
 func TestOpenAIAPIType(t *testing.T) {
 	cases := map[string]string{
-		"openai-compatible-chatlike":      "chat",
-		"openai-compatible-x-responses":   "responses",
-		"openai-compatible-responses-x":   "responses", // suffix anywhere triggers
-		"anthropic-compatible-aws":        "",
-		"":                                "",
+		"openai-compatible-chatlike":    "chat",
+		"openai-compatible-x-responses": "responses",
+		"openai-compatible-responses-x": "responses", // suffix anywhere triggers
+		"anthropic-compatible-aws":      "",
+		"":                              "",
 	}
 	for in, want := range cases {
 		if got := OpenAIAPIType(in); got != want {

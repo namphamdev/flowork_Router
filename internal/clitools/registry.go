@@ -23,13 +23,13 @@ const (
 type Tool struct {
 	ID            string       `json:"id"`
 	DisplayName   string       `json:"displayName"`
-	BinaryName    string       `json:"binaryName"`            // for PATH lookup
+	BinaryName    string       `json:"binaryName"`              // for PATH lookup
 	BinaryAliases []string     `json:"binaryAliases,omitempty"` // alternate executables
-	SettingsPath  string       `json:"settingsPath"`          // expanded path
+	SettingsPath  string       `json:"settingsPath"`            // expanded path
 	Format        ConfigFormat `json:"format"`
-	BaseURLKey    string       `json:"baseUrlKey,omitempty"`  // env var or key path
+	BaseURLKey    string       `json:"baseUrlKey,omitempty"` // env var or key path
 	TokenKey      string       `json:"tokenKey,omitempty"`
-	EnvKeys       []string     `json:"envKeys"`               // keys this tool understands (for reset)
+	EnvKeys       []string     `json:"envKeys"` // keys this tool understands (for reset)
 	Notes         string       `json:"notes,omitempty"`
 }
 
@@ -80,14 +80,14 @@ func All() []Tool {
 			Notes:        "VS Code extension globalState.json (+ secrets.json holds apiKey separately).",
 		},
 		{
-			ID:           "copilot",
-			DisplayName:  "GitHub Copilot CLI",
-			BinaryName:   "gh",
+			ID:            "copilot",
+			DisplayName:   "GitHub Copilot CLI",
+			BinaryName:    "gh",
 			BinaryAliases: []string{"copilot"},
-			SettingsPath: join(".config", "github-copilot", "chatLanguageModels.json"),
-			Format:       FormatJSON,
-			EnvKeys:      []string{"customEndpoint", "customApiKey"},
-			Notes:        "GitHub managed; custom endpoint via copilot-language-models patch.",
+			SettingsPath:  join(".config", "github-copilot", "chatLanguageModels.json"),
+			Format:        FormatJSON,
+			EnvKeys:       []string{"customEndpoint", "customApiKey"},
+			Notes:         "GitHub managed; custom endpoint via copilot-language-models patch.",
 		},
 		{
 			ID:           "cowork",

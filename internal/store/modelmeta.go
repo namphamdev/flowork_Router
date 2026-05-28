@@ -58,7 +58,7 @@ func DeleteModelAlias(d *sql.DB, alias string) error {
 type ModelAvailability struct {
 	Provider     string    `json:"provider"`
 	Model        string    `json:"model"`
-	Status       string    `json:"status"`       // up|down|degraded|unknown
+	Status       string    `json:"status"` // up|down|degraded|unknown
 	LatencyMs    int       `json:"latencyMs"`
 	CheckedAt    time.Time `json:"checkedAt"`
 	ErrorMessage string    `json:"errorMessage,omitempty"`

@@ -33,42 +33,42 @@ type oauthProviderTemplate struct {
 var oauthTemplates = map[string]oauthProviderTemplate{
 	"codex": {
 		Provider: "codex", AuthURL: "https://auth.openai.com/authorize",
-		TokenURL: "https://auth.openai.com/oauth/token",
+		TokenURL:     "https://auth.openai.com/oauth/token",
 		DefaultScope: "openid profile email offline_access codex",
-		ClientIDEnv: "OPENAI_CODEX_CLIENT_ID",
-		Scopes: []string{"openid", "profile", "email", "offline_access", "codex"},
+		ClientIDEnv:  "OPENAI_CODEX_CLIENT_ID",
+		Scopes:       []string{"openid", "profile", "email", "offline_access", "codex"},
 	},
 	"cursor": {
 		Provider: "cursor", AuthURL: "https://www.cursor.com/oauth/authorize",
-		TokenURL: "https://www.cursor.com/oauth/token",
+		TokenURL:     "https://www.cursor.com/oauth/token",
 		DefaultScope: "openid profile offline_access",
-		ClientIDEnv: "CURSOR_CLIENT_ID",
+		ClientIDEnv:  "CURSOR_CLIENT_ID",
 	},
 	"gitlab": {
 		Provider: "gitlab", AuthURL: "https://gitlab.com/oauth/authorize",
-		TokenURL: "https://gitlab.com/oauth/token",
+		TokenURL:     "https://gitlab.com/oauth/token",
 		DefaultScope: "read_api read_user openid",
-		ClientIDEnv: "GITLAB_DUO_CLIENT_ID",
+		ClientIDEnv:  "GITLAB_DUO_CLIENT_ID",
 	},
 	"iflow": {
 		Provider: "iflow", AuthURL: "https://iflow.cn/oauth/authorize",
-		TokenURL: "https://iflow.cn/oauth/token",
+		TokenURL:     "https://iflow.cn/oauth/token",
 		DefaultScope: "chat completions",
-		ClientIDEnv: "IFLOW_CLIENT_ID",
+		ClientIDEnv:  "IFLOW_CLIENT_ID",
 	},
 	"kiro": {
 		Provider: "kiro", AuthURL: "https://kiro.dev/oauth/authorize",
-		TokenURL: "https://kiro.dev/oauth/token",
+		TokenURL:     "https://kiro.dev/oauth/token",
 		DefaultScope: "openid email free-claude-tier",
-		ClientIDEnv: "KIRO_CLIENT_ID",
-		Notes: "Free Claude Sonnet/Opus tier via Kiro signup.",
+		ClientIDEnv:  "KIRO_CLIENT_ID",
+		Notes:        "Free Claude Sonnet/Opus tier via Kiro signup.",
 	},
 	"claude": {
 		Provider: "claude", AuthURL: "https://console.anthropic.com/oauth/authorize",
-		TokenURL: "https://console.anthropic.com/oauth/token",
+		TokenURL:     "https://console.anthropic.com/oauth/token",
 		DefaultScope: "anthropic-completions",
-		ClientIDEnv: "ANTHROPIC_CLIENT_ID",
-		Notes: "Subscription mode currently reads ~/.claude/.credentials.json directly.",
+		ClientIDEnv:  "ANTHROPIC_CLIENT_ID",
+		Notes:        "Subscription mode currently reads ~/.claude/.credentials.json directly.",
 	},
 	// Device Code flow (RFC 8628) providers — no browser redirect, user enters a
 	// code at a URL; we poll the token endpoint until authorised.
@@ -81,11 +81,11 @@ var oauthTemplates = map[string]oauthProviderTemplate{
 	},
 	"xai": {
 		Provider: "xai", AuthURL: "https://auth.x.ai/oauth2/authorize",
-		TokenURL: "https://auth.x.ai/oauth2/token",
+		TokenURL:     "https://auth.x.ai/oauth2/token",
 		DefaultScope: "openid profile email offline_access grok-cli:access api:access",
-		ClientIDEnv: "XAI_CLIENT_ID",
-		Scopes: []string{"openid", "profile", "email", "offline_access", "grok-cli:access", "api:access"},
-		Notes: "PKCE public client; fixed loopback port 56121",
+		ClientIDEnv:  "XAI_CLIENT_ID",
+		Scopes:       []string{"openid", "profile", "email", "offline_access", "grok-cli:access", "api:access"},
+		Notes:        "PKCE public client; fixed loopback port 56121",
 	},
 	"qwen": {
 		Provider: "qwen", AuthURL: "https://chat.qwen.ai/oauth/authorize",
@@ -148,11 +148,11 @@ func oauthImportActionHandler(w http.ResponseWriter, r *http.Request, provider, 
 		return
 	}
 	var body struct {
-		Token       string `json:"token"`
-		AccessToken string `json:"accessToken"`
-		APIKey      string `json:"apiKey"`
-		PAT         string `json:"pat"`
-		Cookie      string `json:"cookie"`
+		Token        string `json:"token"`
+		AccessToken  string `json:"accessToken"`
+		APIKey       string `json:"apiKey"`
+		PAT          string `json:"pat"`
+		Cookie       string `json:"cookie"`
 		RefreshToken string `json:"refreshToken"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -270,8 +270,8 @@ func oauthListHandler(w http.ResponseWriter, r *http.Request) {
 		templates = append(templates, t)
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"tokens":   masked,
-		"count":    len(masked),
+		"tokens":    masked,
+		"count":     len(masked),
 		"supported": templates,
 	})
 }
@@ -349,8 +349,8 @@ func oauthInitHandler(w http.ResponseWriter, r *http.Request, provider string) {
 	tpl, ok := oauthTemplates[provider]
 	if !ok {
 		writeJSON(w, http.StatusNotFound, map[string]any{
-			"error":      "unknown provider — paste-token mode still available via POST /api/oauth/" + provider,
-			"supported":  keysOf(oauthTemplates),
+			"error":     "unknown provider — paste-token mode still available via POST /api/oauth/" + provider,
+			"supported": keysOf(oauthTemplates),
 		})
 		return
 	}
@@ -379,9 +379,9 @@ func oauthInitHandler(w http.ResponseWriter, r *http.Request, provider string) {
 	// Persist transient state for callback validation (10 min TTL)
 	d, _ := store.Open()
 	_ = store.UpsertOAuthToken(d, &store.OAuthTokenRecord{
-		Provider: provider + ":pending",
+		Provider:  provider + ":pending",
 		TokenType: "pkce-pending",
-		Scope: body.Scope,
+		Scope:     body.Scope,
 		Extra: map[string]any{
 			"state":       state,
 			"verifier":    verifier,
@@ -497,14 +497,14 @@ func maskOAuthToken(t *store.OAuthTokenRecord) map[string]any {
 		return s[:4] + strings.Repeat("•", len(s)-8) + s[len(s)-4:]
 	}
 	return map[string]any{
-		"provider":     t.Provider,
-		"tokenType":    t.TokenType,
-		"scope":        t.Scope,
-		"expiresAt":    t.ExpiresAt,
-		"updatedAt":    t.UpdatedAt,
-		"hasAccess":    t.AccessToken != "",
-		"hasRefresh":   t.RefreshToken != "",
-		"accessHint":   mask(t.AccessToken),
+		"provider":   t.Provider,
+		"tokenType":  t.TokenType,
+		"scope":      t.Scope,
+		"expiresAt":  t.ExpiresAt,
+		"updatedAt":  t.UpdatedAt,
+		"hasAccess":  t.AccessToken != "",
+		"hasRefresh": t.RefreshToken != "",
+		"accessHint": mask(t.AccessToken),
 	}
 }
 

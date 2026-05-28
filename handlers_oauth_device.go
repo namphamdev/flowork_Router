@@ -154,8 +154,8 @@ func oauthDevicePollHandler(w http.ResponseWriter, r *http.Request, provider str
 // buggy IdP response (e.g. expires_in = math.MaxInt64) overflows time.Duration
 // and produces a negative/wrong expiry, breaking the device flow.
 func clampDeviceExpiresIn(v int) int {
-	const min = 600           // 10 minutes — the device-flow floor we already used
-	const max = 24 * 60 * 60  // 24 hours — generous ceiling; real IdPs return <=900s
+	const min = 600          // 10 minutes — the device-flow floor we already used
+	const max = 24 * 60 * 60 // 24 hours — generous ceiling; real IdPs return <=900s
 	if v < min {
 		return min
 	}

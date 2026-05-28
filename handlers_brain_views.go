@@ -65,9 +65,11 @@ func brainIngestRunHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // brainAddDrawerHandler — /api/brain/drawer
-//   POST   — add a drawer {content,wing,room,memType}; dedup by content-hash.
-//   PUT    — update existing {id,content,wing,room,memType}; FTS mirror synced.
-//   DELETE — tombstone {?id=...}; FTS index purged so retrieval stops seeing it.
+//
+//	POST   — add a drawer {content,wing,room,memType}; dedup by content-hash.
+//	PUT    — update existing {id,content,wing,room,memType}; FTS mirror synced.
+//	DELETE — tombstone {?id=...}; FTS index purged so retrieval stops seeing it.
+//
 // Append-only doctrine: deletes are soft (deleted_at), never DROP, mirroring
 // the constitution side. Edits keep memory_fts in sync (no DB trigger exists).
 func brainAddDrawerHandler(w http.ResponseWriter, r *http.Request) {
@@ -216,10 +218,11 @@ func brainByTypeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // brainPersonasHandler — /api/brain/personas
-//   GET    — list canonical subagent prompt templates (the Prompt Library).
-//   POST   — add a persona {name,content,source}; name is the primary key.
-//   PUT    — update a persona's content by name {name,content}.
-//   DELETE — remove a persona {?name=...} (hard delete; not append-only).
+//
+//	GET    — list canonical subagent prompt templates (the Prompt Library).
+//	POST   — add a persona {name,content,source}; name is the primary key.
+//	PUT    — update a persona's content by name {name,content}.
+//	DELETE — remove a persona {?name=...} (hard delete; not append-only).
 func brainPersonasHandler(w http.ResponseWriter, r *http.Request) {
 	d, _ := store.Open()
 	s, _ := store.LoadSettings(d)

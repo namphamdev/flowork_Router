@@ -19,19 +19,19 @@ var RefreshLead = 5 * time.Minute
 // returned by TokenSource.Provider(). Unknown providers fall back to the
 // package-level RefreshLead constant.
 var RefreshLeadByProvider = map[string]time.Duration{
-	"codex":        5 * 24 * time.Hour, // 5 days — Codex tokens last ~30d
-	"openai":       5 * 24 * time.Hour, // alias
-	"claude":       4 * time.Hour,      // Claude consumer OAuth ~12h
-	"anthropic":    4 * time.Hour,      // alias
-	"iflow":        24 * time.Hour,     // iFlow tokens ~14 days
-	"qwen":         20 * time.Minute,   // Qwen device tokens ~1h
-	"kimi-coding":  5 * time.Minute,    // Kimi tokens ~30m
-	"kimi":         5 * time.Minute,
-	"antigravity":  5 * time.Minute,    // Google CloudCode tokens ~1h
-	"gemini-cli":   5 * time.Minute,    // alias
-	"github":       4 * time.Hour,      // Copilot tokens ~12h
-	"copilot":      4 * time.Hour,      // alias
-	"kiro":         4 * time.Hour,      // AWS SSO tokens ~8h
+	"codex":       5 * 24 * time.Hour, // 5 days — Codex tokens last ~30d
+	"openai":      5 * 24 * time.Hour, // alias
+	"claude":      4 * time.Hour,      // Claude consumer OAuth ~12h
+	"anthropic":   4 * time.Hour,      // alias
+	"iflow":       24 * time.Hour,     // iFlow tokens ~14 days
+	"qwen":        20 * time.Minute,   // Qwen device tokens ~1h
+	"kimi-coding": 5 * time.Minute,    // Kimi tokens ~30m
+	"kimi":        5 * time.Minute,
+	"antigravity": 5 * time.Minute, // Google CloudCode tokens ~1h
+	"gemini-cli":  5 * time.Minute, // alias
+	"github":      4 * time.Hour,   // Copilot tokens ~12h
+	"copilot":     4 * time.Hour,   // alias
+	"kiro":        4 * time.Hour,   // AWS SSO tokens ~8h
 }
 
 // leadFor returns the refresh lead time for a provider, falling back to the

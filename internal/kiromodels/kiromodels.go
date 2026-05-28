@@ -21,11 +21,11 @@ const (
 	fetchTimeout  = 30 * time.Second
 	cacheTTL      = 5 * time.Minute
 	// runtime headers Kiro upstream validates — values mirror the IDE's UA.
-	sdkVersion    = "1.0.0"
-	agentOS       = "windows"
-	agentOSVer    = "10.0.26200"
-	nodeVer       = "22.21.1"
-	kiroVer       = "0.10.32"
+	sdkVersion = "1.0.0"
+	agentOS    = "windows"
+	agentOSVer = "10.0.26200"
+	nodeVer    = "22.21.1"
+	kiroVer    = "0.10.32"
 )
 
 // Model is one base upstream model from the Kiro catalog.
@@ -185,9 +185,9 @@ func fetchUpstream(ctx context.Context, p Params, region string) ([]Model, error
 
 	var parsed struct {
 		Models []struct {
-			ModelId     string `json:"modelId"`
-			ModelName   string `json:"modelName,omitempty"`
-			Provider    string `json:"provider,omitempty"`
+			ModelId   string `json:"modelId"`
+			ModelName string `json:"modelName,omitempty"`
+			Provider  string `json:"provider,omitempty"`
 		} `json:"models"`
 	}
 	if err := json.Unmarshal(body, &parsed); err != nil {

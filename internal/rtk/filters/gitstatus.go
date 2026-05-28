@@ -16,8 +16,10 @@ var (
 	rePorcelainLine = mustCompile(`(?m)^[ MADRCU?!][ MADRCU?!] \S`)
 )
 
-func (g *gitStatus) Name() string            { return "git-status" }
-func (g *gitStatus) Detect(head string) bool { return reGitStatusHead.MatchString(head) || isMostlyPorcelain(head) }
+func (g *gitStatus) Name() string { return "git-status" }
+func (g *gitStatus) Detect(head string) bool {
+	return reGitStatusHead.MatchString(head) || isMostlyPorcelain(head)
+}
 
 func (g *gitStatus) Apply(text string) string {
 	lines := strings.Split(text, "\n")

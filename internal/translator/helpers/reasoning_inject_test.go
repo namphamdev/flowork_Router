@@ -88,8 +88,8 @@ func TestApplyDeepSeekV4ProAlias_MaxMapsToEnabled(t *testing.T) {
 
 func TestApplyDeepSeekV4ProAlias_NoneMapsToDisabled(t *testing.T) {
 	body := map[string]any{
-		"model":             "deepseek-v4-pro-none",
-		"reasoning_effort":  "high",
+		"model":            "deepseek-v4-pro-none",
+		"reasoning_effort": "high",
 	}
 	ApplyDeepSeekV4ProAlias("deepseek", body)
 	if body["model"] != "deepseek-v4-pro" {

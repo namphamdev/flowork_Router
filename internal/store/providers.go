@@ -14,9 +14,9 @@ import (
 
 // AuthType constants — universal router auth modes.
 const (
-	AuthTypeAPIKey       = "api_key"        // regular bearer / key header
-	AuthTypeSubscription = "subscription"   // OAuth subscription (Claude/Codex/Cursor)
-	AuthTypeNone         = "none"           // local llama, no auth
+	AuthTypeAPIKey       = "api_key"      // regular bearer / key header
+	AuthTypeSubscription = "subscription" // OAuth subscription (Claude/Codex/Cursor)
+	AuthTypeNone         = "none"         // local llama, no auth
 )
 
 // ProviderConnection — single provider record. `Data` is JSON-serialized
@@ -36,12 +36,12 @@ type ProviderConnection struct {
 
 // ProviderConfigKey untuk `Data` map. Document semua kunci yang dipake.
 const (
-	CfgBaseURL       = "baseUrl"
-	CfgAPIKey        = "apiKey"        // encrypted at rest via secret.go (AES-GCM); decrypted on read
-	CfgModels        = "models"        // []string of supported models
-	CfgFormat        = "format"        // "openai", "anthropic", "gemini"
-	CfgHeaders       = "headers"       // map[string]string extra headers
-	CfgTokenSource   = "tokenSource"   // for subscription: "claude_credentials", "codex_auth", "cursor_session"
+	CfgBaseURL     = "baseUrl"
+	CfgAPIKey      = "apiKey"      // encrypted at rest via secret.go (AES-GCM); decrypted on read
+	CfgModels      = "models"      // []string of supported models
+	CfgFormat      = "format"      // "openai", "anthropic", "gemini"
+	CfgHeaders     = "headers"     // map[string]string extra headers
+	CfgTokenSource = "tokenSource" // for subscription: "claude_credentials", "codex_auth", "cursor_session"
 )
 
 // ListProviders returns all providers, ordered by priority ASC.

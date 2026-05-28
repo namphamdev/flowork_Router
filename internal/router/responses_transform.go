@@ -19,24 +19,24 @@ import (
 // chunks into a sequence of /v1/responses SSE events. Callers feed raw chunk
 // JSON payloads via Feed(); Close() emits the final completed event.
 type ResponsesSSEWriter struct {
-	w         io.Writer
-	flushFn   func() // optional flush hook
-	mu        sync.Mutex
+	w          io.Writer
+	flushFn    func() // optional flush hook
+	mu         sync.Mutex
 	responseID string
-	model     string
-	created   int64
-	seq       int
+	model      string
+	created    int64
+	seq        int
 
 	// Per-item state.
-	msgItemID      string
-	msgItemAdded   bool
-	textPartAdded  bool
-	contentBuf     strings.Builder
+	msgItemID     string
+	msgItemAdded  bool
+	textPartAdded bool
+	contentBuf    strings.Builder
 
-	reasonItemID      string
-	reasonItemAdded   bool
-	reasonPartAdded   bool
-	reasonBuf         strings.Builder
+	reasonItemID    string
+	reasonItemAdded bool
+	reasonPartAdded bool
+	reasonBuf       strings.Builder
 
 	// Tool calls keyed by index — Codex emits one function_call item per
 	// tool with arguments.delta chunks.
@@ -135,11 +135,11 @@ func (r *ResponsesSSEWriter) Close() {
 	// Close any open text item.
 	if r.textPartAdded {
 		r.emit("response.output_text.done", map[string]any{
-			"type":         "response.output_text.done",
-			"item_id":      r.msgItemID,
-			"output_index": 0,
+			"type":          "response.output_text.done",
+			"item_id":       r.msgItemID,
+			"output_index":  0,
 			"content_index": 0,
-			"text":         r.contentBuf.String(),
+			"text":          r.contentBuf.String(),
 		})
 		r.emit("response.content_part.done", map[string]any{
 			"type":          "response.content_part.done",

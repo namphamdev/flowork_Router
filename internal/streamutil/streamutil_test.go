@@ -65,7 +65,7 @@ func TestSessionManager_StableWithinProcess(t *testing.T) {
 
 func TestClaudeHeaderCache_OnlyCaptureFromCliClient(t *testing.T) {
 	CaptureFromRequest(map[string]string{
-		"user-agent": "curl/8.0",
+		"user-agent":     "curl/8.0",
 		"anthropic-beta": "tools-2024-04-04",
 	})
 	if HasCachedClaudeHeaders() {

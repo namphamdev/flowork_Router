@@ -39,11 +39,11 @@ func TestRegistry_AllExecutorsRegistered(t *testing.T) {
 // it, otherwise the vendor default kicks in.
 func TestExecutors_EndpointShaping(t *testing.T) {
 	cases := []struct {
-		name        string
-		exec        Executor
-		want        string
-		data        map[string]any
-		urlBuilder  func(Executor, *store.ProviderConnection, string) string
+		name       string
+		exec       Executor
+		want       string
+		data       map[string]any
+		urlBuilder func(Executor, *store.ProviderConnection, string) string
 	}{
 		{
 			"codex default", &codexExecutor{}, "/backend-api/codex/responses",

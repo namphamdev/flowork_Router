@@ -24,10 +24,10 @@ func (o *openaiProvider) Generate(ctx context.Context, req Request) (*Result, er
 		base = "https://api.openai.com/v1"
 	}
 	body, _ := json.Marshal(map[string]any{
-		"model":  defaultStr(req.Model, "dall-e-3"),
-		"prompt": req.Prompt,
-		"n":      defaultInt(req.N, 1),
-		"size":   defaultStr(req.Size, "1024x1024"),
+		"model":   defaultStr(req.Model, "dall-e-3"),
+		"prompt":  req.Prompt,
+		"n":       defaultInt(req.N, 1),
+		"size":    defaultStr(req.Size, "1024x1024"),
 		"quality": defaultStr(req.Quality, "standard"),
 	})
 	r, err := http.NewRequestWithContext(ctx, http.MethodPost, base+"/images/generations", bytes.NewReader(body))

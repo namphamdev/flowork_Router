@@ -14,8 +14,8 @@ func init() { rtk.Register(&smartTruncate{}) }
 
 type smartTruncate struct{}
 
-func (s *smartTruncate) Name() string             { return "smart-truncate" }
-func (s *smartTruncate) Detect(head string) bool  { return false /* fallback only */ }
+func (s *smartTruncate) Name() string            { return "smart-truncate" }
+func (s *smartTruncate) Detect(head string) bool { return false /* fallback only */ }
 func (s *smartTruncate) Apply(text string) string {
 	const cap = 4000
 	if len(text) <= cap {

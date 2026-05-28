@@ -13,8 +13,8 @@ type buildOutput struct{}
 
 var reBuildOutput = mustCompile(`(?im)^(npm (warn|error|ERR!)|yarn (warn|error)|\s*Compiling\s+\S+|\s*Downloading\s+\S+|added \d+ package|\[ERROR\]|BUILD (SUCCESS|FAILED)|\s*Finished\s+|Successfully (installed|built)|ERROR:|FAILED:|Traceback|panic:)`)
 
-func (b *buildOutput) Name() string             { return "build-output" }
-func (b *buildOutput) Detect(head string) bool  { return reBuildOutput.MatchString(head) }
+func (b *buildOutput) Name() string            { return "build-output" }
+func (b *buildOutput) Detect(head string) bool { return reBuildOutput.MatchString(head) }
 func (b *buildOutput) Apply(text string) string {
 	lines := strings.Split(text, "\n")
 	if len(lines) <= 60 {
@@ -53,13 +53,13 @@ func (b *buildOutput) Apply(text string) string {
 	out := make([]string, 0, headN+len(criticalLines)+tailN+3)
 	out = append(out, head...)
 	if len(criticalLines) > 0 {
-		out = append(out, "…[" + itoa(totalCutBy) + " progress lines trimmed by RTK build-output]…")
+		out = append(out, "…["+itoa(totalCutBy)+" progress lines trimmed by RTK build-output]…")
 		out = append(out, criticalLines...)
 		if dropped > 0 {
-			out = append(out, "…[+" + itoa(dropped) + " more critical lines]…")
+			out = append(out, "…[+"+itoa(dropped)+" more critical lines]…")
 		}
 	} else {
-		out = append(out, "…[" + itoa(totalCutBy) + " progress lines trimmed by RTK build-output]…")
+		out = append(out, "…["+itoa(totalCutBy)+" progress lines trimmed by RTK build-output]…")
 	}
 	out = append(out, tail...)
 	return strings.Join(out, "\n")

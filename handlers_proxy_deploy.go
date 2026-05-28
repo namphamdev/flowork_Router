@@ -12,10 +12,10 @@ import (
 )
 
 type proxyDeployBody struct {
-	Name        string `json:"name"`
-	TargetURL   string `json:"targetUrl"`
-	APIKeyEnv   string `json:"apiKeyEnv"`
-	Project     string `json:"project"`
+	Name      string `json:"name"`
+	TargetURL string `json:"targetUrl"`
+	APIKeyEnv string `json:"apiKeyEnv"`
+	Project   string `json:"project"`
 }
 
 // cloudflareDeployHandler — POST generate a Cloudflare Worker that proxies

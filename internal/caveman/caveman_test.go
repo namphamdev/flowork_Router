@@ -7,15 +7,15 @@ import (
 
 func TestNormalize(t *testing.T) {
 	cases := map[string]Level{
-		"":              LevelOff,
-		"  ":            LevelOff,
-		"off":           LevelOff,
-		"lite":          LevelLite,
-		"LITE":          LevelLite,
-		"  Full ":       LevelFull,
-		"ultra":         LevelUltra,
-		"bogus":         LevelOff,
-		"thinking":      LevelOff,
+		"":         LevelOff,
+		"  ":       LevelOff,
+		"off":      LevelOff,
+		"lite":     LevelLite,
+		"LITE":     LevelLite,
+		"  Full ":  LevelFull,
+		"ultra":    LevelUltra,
+		"bogus":    LevelOff,
+		"thinking": LevelOff,
 	}
 	for in, want := range cases {
 		if got := Normalize(in); got != want {

@@ -198,10 +198,10 @@ func hashPassword(plain string) string {
 	salt := make([]byte, 16)
 	_, _ = rand.Read(salt)
 	const (
-		t       = 1
-		m       = 64 * 1024
-		p       = 4
-		keyLen  = 32
+		t      = 1
+		m      = 64 * 1024
+		p      = 4
+		keyLen = 32
 	)
 	h := argon2.IDKey([]byte(plain), salt, t, m, p, keyLen)
 	return fmt.Sprintf("$argon2id$v=%d$m=%d,t=%d,p=%d$%s$%s",

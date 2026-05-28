@@ -20,9 +20,9 @@ func (i *inworldProvider) Speak(ctx context.Context, req Request) ([]byte, strin
 		base = "https://api.inworld.ai/v1/tts"
 	}
 	body, _ := json.Marshal(map[string]any{
-		"text":      req.Input,
-		"voice_id":  defaultStr(req.Voice, "default"),
-		"format":    defaultStr(req.ResponseFormat, "mp3"),
+		"text":     req.Input,
+		"voice_id": defaultStr(req.Voice, "default"),
+		"format":   defaultStr(req.ResponseFormat, "mp3"),
 	})
 	r, err := http.NewRequestWithContext(ctx, http.MethodPost, base+"/synthesize", bytes.NewReader(body))
 	if err != nil {

@@ -29,9 +29,9 @@ func (d *duckduckgoProvider) Search(ctx context.Context, req Request) (*Result, 
 	}
 	r.Header.Set("Accept", "application/json")
 	var resp struct {
-		AbstractText string `json:"AbstractText"`
-		AbstractURL  string `json:"AbstractURL"`
-		Heading      string `json:"Heading"`
+		AbstractText  string `json:"AbstractText"`
+		AbstractURL   string `json:"AbstractURL"`
+		Heading       string `json:"Heading"`
 		RelatedTopics []struct {
 			Text     string `json:"Text"`
 			FirstURL string `json:"FirstURL"`

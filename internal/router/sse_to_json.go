@@ -17,9 +17,9 @@ import (
 // by the index field that OpenAI uses to pair chunk-by-chunk arguments back
 // to one logical call.
 type sseToolCallAcc struct {
-	ID    string
-	Name  string
-	Args  string
+	ID   string
+	Name string
+	Args string
 }
 
 // ParseSSEToOpenAIResponse walks a raw SSE buffer (the whole stream body)
@@ -59,11 +59,11 @@ func ParseSSEToOpenAIResponse(rawSSE []byte, fallbackModel string) map[string]an
 
 	first := chunks[0]
 	var (
-		content       strings.Builder
-		reasoning     strings.Builder
-		toolCalls     = map[int]*sseToolCallAcc{}
-		finishReason  = "stop"
-		usage         map[string]any
+		content      strings.Builder
+		reasoning    strings.Builder
+		toolCalls    = map[int]*sseToolCallAcc{}
+		finishReason = "stop"
+		usage        map[string]any
 	)
 
 	for _, chunk := range chunks {

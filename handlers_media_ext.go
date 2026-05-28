@@ -53,8 +53,8 @@ func mediaTTSHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if picked == nil {
 		writeJSON(w, http.StatusNotImplemented, map[string]any{
-			"error":   "no active TTS provider",
-			"hint":    "POST /api/media-providers with category=tts",
+			"error":    "no active TTS provider",
+			"hint":     "POST /api/media-providers with category=tts",
 			"category": store.MediaCategoryTTS,
 		})
 		return

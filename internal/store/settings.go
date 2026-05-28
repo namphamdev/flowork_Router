@@ -11,9 +11,9 @@ import (
 // Settings — full editable router config. JSON-serialized to settings.data.
 type Settings struct {
 	// Auth
-	RequireLogin bool   `json:"requireLogin"`
-	AuthMode     string `json:"authMode"`   // "password" | "oidc" | "none"
-	Password     string `json:"password,omitempty"`   // hashed, never returned to client
+	RequireLogin bool           `json:"requireLogin"`
+	AuthMode     string         `json:"authMode"`           // "password" | "oidc" | "none"
+	Password     string         `json:"password,omitempty"` // hashed, never returned to client
 	OidcConfig   map[string]any `json:"oidcConfig,omitempty"`
 
 	// Inbound API-key gate for /v1. When true, every /v1 + /v1beta request must
@@ -75,16 +75,16 @@ type Settings struct {
 
 // BrainConfig configures the brain enrichment layer.
 type BrainConfig struct {
-	Enabled         bool     `json:"enabled"`                 // master switch
-	Model           string   `json:"model"`                   // trigger model name (default "flowork-brain")
-	DBPath          string   `json:"dbPath,omitempty"`        // optional DB override; else env/default
-	Mode            string   `json:"mode"`                    // "augment" (default) | "brain"
-	Wings           []string `json:"wings,omitempty"`         // optional wing whitelist for retrieval
-	TopK            int      `json:"topK"`                    // knowledge snippets injected (default 5)
-	MaxSnippetChars int      `json:"maxSnippetChars"`         // per-snippet truncation (default 600)
-	Skills          bool     `json:"skills"`                  // inject relevant skills
-	SkillTopK       int      `json:"skillTopK"`               // skills injected (default 3)
-	Record          bool     `json:"record"`                  // queue interactions for compounding (default off)
+	Enabled         bool     `json:"enabled"`          // master switch
+	Model           string   `json:"model"`            // trigger model name (default "flowork-brain")
+	DBPath          string   `json:"dbPath,omitempty"` // optional DB override; else env/default
+	Mode            string   `json:"mode"`             // "augment" (default) | "brain"
+	Wings           []string `json:"wings,omitempty"`  // optional wing whitelist for retrieval
+	TopK            int      `json:"topK"`             // knowledge snippets injected (default 5)
+	MaxSnippetChars int      `json:"maxSnippetChars"`  // per-snippet truncation (default 600)
+	Skills          bool     `json:"skills"`           // inject relevant skills
+	SkillTopK       int      `json:"skillTopK"`        // skills injected (default 3)
+	Record          bool     `json:"record"`           // queue interactions for compounding (default off)
 
 	// AlwaysOn — when true, knowledge retrieval + skill selection fires for
 	// EVERY chat request, not just those whose model matches Model. Without
@@ -107,9 +107,9 @@ type BrainConfig struct {
 // (Warmup, count, title-extraction, isNewTopic probes, configurable skip
 // patterns) with a local stub response, saving upstream tokens.
 type ClaudeCliBypass struct {
-	Enabled         bool     `json:"enabled"`
-	SkipPatterns    []string `json:"skipPatterns,omitempty"`    // extra substrings → bypass
-	CcFilterNaming  bool     `json:"ccFilterNaming,omitempty"`  // enable the isNewTopic probe
+	Enabled        bool     `json:"enabled"`
+	SkipPatterns   []string `json:"skipPatterns,omitempty"`   // extra substrings → bypass
+	CcFilterNaming bool     `json:"ccFilterNaming,omitempty"` // enable the isNewTopic probe
 }
 
 // IntentRouting steers prompts deemed "private" to a local provider.

@@ -25,9 +25,9 @@ func TestBuildOpenAIUsage_NoCacheTokens(t *testing.T) {
 
 func TestBuildOpenAIUsage_WithCacheRead(t *testing.T) {
 	usage := buildOpenAIUsageFromAnthropic(map[string]any{
-		"input_tokens":             100.0,
-		"output_tokens":            50.0,
-		"cache_read_input_tokens":  800.0,
+		"input_tokens":            100.0,
+		"output_tokens":           50.0,
+		"cache_read_input_tokens": 800.0,
 	})
 	// prompt_tokens must include cache_read (800 + 100 = 900)
 	if got := usage["prompt_tokens"].(int64); got != 900 {
@@ -100,9 +100,9 @@ func TestClaudeToOpenAI_EmitsCacheBreakdown(t *testing.T) {
 			map[string]any{"type": "text", "text": "hello"},
 		},
 		"usage": map[string]any{
-			"input_tokens":             50.0,
-			"output_tokens":            20.0,
-			"cache_read_input_tokens":  500.0,
+			"input_tokens":            50.0,
+			"output_tokens":           20.0,
+			"cache_read_input_tokens": 500.0,
 		},
 	})
 	usage := out["usage"].(map[string]any)

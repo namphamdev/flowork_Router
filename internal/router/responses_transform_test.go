@@ -149,8 +149,8 @@ func TestResponsesSSE_ToolCallEmitsArgumentsDelta(t *testing.T) {
 				"delta": map[string]any{
 					"tool_calls": []any{
 						map[string]any{
-							"index": 0.0,
-							"id":    "call_1",
+							"index":    0.0,
+							"id":       "call_1",
 							"function": map[string]any{"name": "get_w", "arguments": "{\"x\":1}"},
 						},
 					},

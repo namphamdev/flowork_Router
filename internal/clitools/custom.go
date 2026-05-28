@@ -85,11 +85,14 @@ func ensureV1(u string) string {
 
 // ── Hermes: ~/.hermes/config.yaml (model block) + ~/.hermes/.env ────────
 // config.yaml:
-//   model:
-//     provider: "custom"
-//     base_url: "<baseUrl>"
+//
+//	model:
+//	  provider: "custom"
+//	  base_url: "<baseUrl>"
+//
 // .env:
-//   OPENAI_API_KEY=<apiKey>
+//
+//	OPENAI_API_KEY=<apiKey>
 func writeHermes(home string, env map[string]any) (map[string]any, error) {
 	dir := filepath.Join(home, ".hermes")
 	if err := os.MkdirAll(dir, 0o700); err != nil {
@@ -150,7 +153,9 @@ func writeHermes(home string, env map[string]any) (map[string]any, error) {
 
 // ── OpenClaw: ~/.openclaw/openclaw.json + ~/.openclaw/models.json ───────
 // openclaw.json: agents.defaults.model.primary = "flow_router/<model>",
-//   models.providers ensured.
+//
+//	models.providers ensured.
+//
 // models.json: providers["flow_router"] = { baseUrl(/v1), apiKey, models:[{id}] }
 func writeOpenclaw(home string, env map[string]any) (map[string]any, error) {
 	dir := filepath.Join(home, ".openclaw")
@@ -237,14 +242,17 @@ func writeOpenclaw(home string, env map[string]any) (map[string]any, error) {
 
 // ── Codex: ~/.codex/config.toml (model_provider block) + ~/.codex/auth.json ─
 // config.toml:
-//   model = "<model>"
-//   model_provider = "flow_router"
-//   [model_providers.flow_router]
-//   name = "flow_router"
-//   base_url = "<baseUrl>/v1"
-//   wire_api = "responses"
+//
+//	model = "<model>"
+//	model_provider = "flow_router"
+//	[model_providers.flow_router]
+//	name = "flow_router"
+//	base_url = "<baseUrl>/v1"
+//	wire_api = "responses"
+//
 // auth.json:
-//   { "OPENAI_API_KEY": "<apiKey>" }
+//
+//	{ "OPENAI_API_KEY": "<apiKey>" }
 func writeCodex(home string, env map[string]any) (map[string]any, error) {
 	dir := filepath.Join(home, ".codex")
 	if err := os.MkdirAll(dir, 0o700); err != nil {

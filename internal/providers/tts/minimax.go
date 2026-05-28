@@ -23,10 +23,10 @@ func (m *minimaxProvider) Speak(ctx context.Context, req Request) ([]byte, strin
 		"model": defaultStr(req.Model, "speech-01"),
 		"text":  req.Input,
 		"voice_setting": map[string]any{
-			"voice_id":     defaultStr(req.Voice, "female-shaonv"),
-			"speed":        1.0,
-			"vol":          1.0,
-			"pitch":        0,
+			"voice_id": defaultStr(req.Voice, "female-shaonv"),
+			"speed":    1.0,
+			"vol":      1.0,
+			"pitch":    0,
 		},
 		"audio_setting": map[string]any{
 			"sample_rate": 32000,

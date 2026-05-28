@@ -27,7 +27,9 @@ type apiKey struct {
 }
 
 func fetchKeys(c *api.Client) ([]apiKey, error) {
-	var wrap struct{ Data []apiKey `json:"data"` }
+	var wrap struct {
+		Data []apiKey `json:"data"`
+	}
 	if err := c.Get("/api/keys", &wrap); err == nil && wrap.Data != nil {
 		return wrap.Data, nil
 	}

@@ -129,4 +129,3 @@ func AntigravitySessionStoreSize() int {
 	defer sessionMu.Unlock()
 	return len(sessionStore)
 }
-

@@ -15,6 +15,7 @@ import (
 // Gated: only runs with OLLAMA_E2E=1, a temp FLOW_ROUTER_DATA, and a brain DB.
 // Enrichment is kept minimal (topK=1, no skills) because the brain gguf runs
 // CPU-split on a low-VRAM box and prompt-eval is slow.
+//
 //	OLLAMA_E2E=1 FLOW_ROUTER_DATA=$(mktemp -d) \
 //	FLOW_ROUTER_BRAIN_DB=/path/brain.sqlite \
 //	  go test ./internal/router/ -run BrainOllamaE2E -v -timeout 600s

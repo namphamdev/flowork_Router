@@ -17,10 +17,11 @@ import (
 // streaming (Codex backend forces stream=true).
 //
 // Event handling:
-//   response.created          → captures id + created_at
-//   response.output_item.done → stashes the completed item by output_index
-//   response.completed        → marks status=completed + lifts usage
-//   response.failed           → marks status=failed
+//
+//	response.created          → captures id + created_at
+//	response.output_item.done → stashes the completed item by output_index
+//	response.completed        → marks status=completed + lifts usage
+//	response.failed           → marks status=failed
 //
 // Other events (item.added, content_part.added, *_delta, *_done) are ignored
 // — we only need the final item snapshots, which arrive inside

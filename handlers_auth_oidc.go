@@ -272,12 +272,12 @@ func authEnforceMiddleware(next http.Handler) http.Handler {
 // pathRequiresSession — protected unless explicitly exempt.
 func pathRequiresSession(p string) bool {
 	exempt := []string{
-		"/api/auth/",      // login/logout/status/oidc themselves
-		"/v1/",            // API-key authenticated, not session
-		"/v1beta/",        // Gemini-shape API endpoints, API-key authenticated
+		"/api/auth/", // login/logout/status/oidc themselves
+		"/v1/",       // API-key authenticated, not session
+		"/v1beta/",   // Gemini-shape API endpoints, API-key authenticated
 		"/healthz",
 		"/api/health",
-		"/api/shutdown",   // local control
+		"/api/shutdown", // local control
 		"/favicon",
 		"/static/",
 	}

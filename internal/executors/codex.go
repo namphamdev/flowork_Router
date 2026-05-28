@@ -26,10 +26,10 @@ func (c *codexExecutor) endpoint(p *store.ProviderConnection) string {
 
 func (c *codexExecutor) headers(p *store.ProviderConnection) map[string]string {
 	h := map[string]string{
-		"Accept":             "text/event-stream",
-		"OpenAI-Beta":        "responses=experimental",
-		"originator":         "codex_cli_rs",
-		"version":            "0.20.0",
+		"Accept":      "text/event-stream",
+		"OpenAI-Beta": "responses=experimental",
+		"originator":  "codex_cli_rs",
+		"version":     "0.20.0",
 	}
 	if tok, ok := p.Data[store.CfgAPIKey].(string); ok && tok != "" {
 		h["Authorization"] = "Bearer " + tok

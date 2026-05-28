@@ -4,24 +4,24 @@ package store
 
 // Preset — template for one-click provider setup.
 type Preset struct {
-	ID            string   `json:"id"`             // "openai", "anthropic-api", "anthropic-sub", "deepseek", ...
-	Name          string   `json:"name"`           // display name
-	Icon          string   `json:"icon"`           // emoji
-	Description   string   `json:"description"`    // tagline
-	Provider      string   `json:"provider"`       // internal provider type
-	AuthType      string   `json:"authType"`       // api_key | subscription | none
-	Format        string   `json:"format"`         // openai | anthropic | gemini
-	BaseURL       string   `json:"baseUrl"`        // upstream endpoint
-	Priority      int      `json:"priority"`       // default priority
-	Models        []string `json:"models"`         // pre-filled list
-	NeedsAPIKey   bool     `json:"needsApiKey"`    // show API key field
-	NeedsURL      bool     `json:"needsUrl"`       // show base URL field (custom only)
-	TokenSource   string   `json:"tokenSource,omitempty"` // subscription source
-	APIKeyHint    string   `json:"apiKeyHint,omitempty"`  // placeholder hint
-	APIKeyURL     string   `json:"apiKeyUrl,omitempty"`   // where to get key
-	Free          bool     `json:"free"`           // free tier hint
-	Tag           string   `json:"tag,omitempty"`  // "cheap", "fast", "free", "premium"
-	QuotaResetHours float64 `json:"quotaResetHours,omitempty"` // rolling quota window (hours); 0 = none
+	ID              string   `json:"id"`                        // "openai", "anthropic-api", "anthropic-sub", "deepseek", ...
+	Name            string   `json:"name"`                      // display name
+	Icon            string   `json:"icon"`                      // emoji
+	Description     string   `json:"description"`               // tagline
+	Provider        string   `json:"provider"`                  // internal provider type
+	AuthType        string   `json:"authType"`                  // api_key | subscription | none
+	Format          string   `json:"format"`                    // openai | anthropic | gemini
+	BaseURL         string   `json:"baseUrl"`                   // upstream endpoint
+	Priority        int      `json:"priority"`                  // default priority
+	Models          []string `json:"models"`                    // pre-filled list
+	NeedsAPIKey     bool     `json:"needsApiKey"`               // show API key field
+	NeedsURL        bool     `json:"needsUrl"`                  // show base URL field (custom only)
+	TokenSource     string   `json:"tokenSource,omitempty"`     // subscription source
+	APIKeyHint      string   `json:"apiKeyHint,omitempty"`      // placeholder hint
+	APIKeyURL       string   `json:"apiKeyUrl,omitempty"`       // where to get key
+	Free            bool     `json:"free"`                      // free tier hint
+	Tag             string   `json:"tag,omitempty"`             // "cheap", "fast", "free", "premium"
+	QuotaResetHours float64  `json:"quotaResetHours,omitempty"` // rolling quota window (hours); 0 = none
 }
 
 // Presets — curated list of supported providers. Easy to extend.

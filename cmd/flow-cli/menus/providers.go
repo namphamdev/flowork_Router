@@ -30,7 +30,9 @@ func fetchProviders(c *api.Client) ([]provider, error) {
 	if err := c.Get("/api/providers", &arr); err == nil {
 		return arr, nil
 	}
-	var wrap struct{ Data []provider `json:"data"` }
+	var wrap struct {
+		Data []provider `json:"data"`
+	}
 	if err := c.Get("/api/providers", &wrap); err != nil {
 		return nil, err
 	}

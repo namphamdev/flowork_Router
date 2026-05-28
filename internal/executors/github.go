@@ -27,15 +27,15 @@ func (g *githubExecutor) endpoint(p *store.ProviderConnection) string {
 
 func (g *githubExecutor) headers(p *store.ProviderConnection, stream bool) map[string]string {
 	h := map[string]string{
-		"copilot-integration-id":               "vscode-chat",
-		"editor-version":                       "vscode/1.99.0",
-		"editor-plugin-version":                "copilot-chat/0.20.0",
-		"user-agent":                           "GitHubCopilotChat/0.20.0",
-		"openai-intent":                        "conversation-panel",
-		"x-github-api-version":                 "2024-12-15",
-		"x-request-id":                         randomGitHubReqID(),
-		"x-vscode-user-agent-library-version":  "electron-fetch",
-		"X-Initiator":                          "user",
+		"copilot-integration-id":              "vscode-chat",
+		"editor-version":                      "vscode/1.99.0",
+		"editor-plugin-version":               "copilot-chat/0.20.0",
+		"user-agent":                          "GitHubCopilotChat/0.20.0",
+		"openai-intent":                       "conversation-panel",
+		"x-github-api-version":                "2024-12-15",
+		"x-request-id":                        randomGitHubReqID(),
+		"x-vscode-user-agent-library-version": "electron-fetch",
+		"X-Initiator":                         "user",
 	}
 	if tok, ok := p.Data["copilotToken"].(string); ok && tok != "" {
 		h["Authorization"] = "Bearer " + tok

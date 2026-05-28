@@ -42,10 +42,10 @@ var loginLockSteps = []time.Duration{
 }
 
 type loginLockEntry struct {
-	fails       int
-	lockUntil   time.Time
-	lockLevel   int
-	lastFailAt  time.Time
+	fails      int
+	lockUntil  time.Time
+	lockLevel  int
+	lastFailAt time.Time
 }
 
 var (

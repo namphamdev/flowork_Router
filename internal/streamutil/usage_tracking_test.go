@@ -57,8 +57,8 @@ func TestAddBufferToUsage_NilInputUnchanged(t *testing.T) {
 
 func TestNormalizeUsage_CoercesNumericTypes(t *testing.T) {
 	got := NormalizeUsage(map[string]any{
-		"prompt_tokens":     int(100),    // int
-		"completion_tokens": int64(50),   // int64
+		"prompt_tokens":     int(100),  // int
+		"completion_tokens": int64(50), // int64
 		"total_tokens":      float64(150),
 	})
 	if got["prompt_tokens"].(float64) != 100 {
@@ -87,8 +87,8 @@ func TestNormalizeUsage_PreservesDetailsObjects(t *testing.T) {
 
 func TestNormalizeUsage_DropsNaNAndStrings(t *testing.T) {
 	got := NormalizeUsage(map[string]any{
-		"prompt_tokens":  "not a number",
-		"total_tokens":   float64(150),
+		"prompt_tokens": "not a number",
+		"total_tokens":  float64(150),
 	})
 	if _, has := got["prompt_tokens"]; has {
 		t.Error("string value should be dropped")
@@ -129,10 +129,10 @@ func TestFilterUsageForFormat_OpenAIKeepsOpenAIKeys(t *testing.T) {
 
 func TestFilterUsageForFormat_ClaudeKeepsClaudeKeys(t *testing.T) {
 	got := FilterUsageForFormat(map[string]any{
-		"input_tokens":             float64(10),
-		"output_tokens":            float64(5),
-		"cache_read_input_tokens":  float64(2),
-		"prompt_tokens":            float64(99),
+		"input_tokens":            float64(10),
+		"output_tokens":           float64(5),
+		"cache_read_input_tokens": float64(2),
+		"prompt_tokens":           float64(99),
 	}, FormatClaude)
 	if got["input_tokens"].(float64) != 10 || got["cache_read_input_tokens"].(float64) != 2 {
 		t.Errorf("claude keys lost: %+v", got)

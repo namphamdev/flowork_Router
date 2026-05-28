@@ -17,8 +17,10 @@ var (
 	reGitDiffStart = mustCompile(`(?m)^(diff --git|index |@@ |\+\+\+ |--- )`)
 )
 
-func (g *gitDiff) Name() string             { return "git-diff" }
-func (g *gitDiff) Detect(head string) bool  { return reGitDiff.MatchString(head) || reGitDiffHunk.MatchString(head) }
+func (g *gitDiff) Name() string { return "git-diff" }
+func (g *gitDiff) Detect(head string) bool {
+	return reGitDiff.MatchString(head) || reGitDiffHunk.MatchString(head)
+}
 func (g *gitDiff) Apply(text string) string {
 	lines := strings.Split(text, "\n")
 	var out []string

@@ -42,9 +42,9 @@ func (p *perplexityWebExecutor) body(req Request) []byte {
 		prompt += m.Content + "\n"
 	}
 	out := map[string]any{
-		"query":          prompt,
-		"sources":        []string{"web"},
-		"language":       "en-US",
+		"query":            prompt,
+		"sources":          []string{"web"},
+		"language":         "en-US",
 		"model_preference": req.Model,
 	}
 	b, _ := json.Marshal(out)

@@ -20,10 +20,10 @@ func (s *stabilityAiProvider) Generate(ctx context.Context, req Request) (*Resul
 		base = "https://api.stability.ai/v2beta"
 	}
 	body, _ := json.Marshal(map[string]any{
-		"prompt":           req.Prompt,
-		"negative_prompt":  req.NegativePrompt,
-		"aspect_ratio":     defaultStr(req.Size, "1:1"),
-		"output_format":    "png",
+		"prompt":          req.Prompt,
+		"negative_prompt": req.NegativePrompt,
+		"aspect_ratio":    defaultStr(req.Size, "1:1"),
+		"output_format":   "png",
 	})
 	r, err := http.NewRequestWithContext(ctx, http.MethodPost, base+"/stable-image/generate/sd3", bytes.NewReader(body))
 	if err != nil {

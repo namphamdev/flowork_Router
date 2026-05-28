@@ -13,14 +13,14 @@ import (
 // Used + Total + Remaining are in the same unit and same scale; for percent
 // quotas we expose Used as the percentage and Total = 100.
 type Window struct {
-	Label             string    `json:"label"`
-	Used              float64   `json:"used"`
-	Total             float64   `json:"total"`
-	Remaining         float64   `json:"remaining"`
-	RemainingPercent  float64   `json:"remainingPercent"`
-	ResetAt           time.Time `json:"resetAt,omitempty"`
-	Unlimited         bool      `json:"unlimited,omitempty"`
-	Unit              string    `json:"unit,omitempty"` // "requests" | "tokens" | "percent"
+	Label            string    `json:"label"`
+	Used             float64   `json:"used"`
+	Total            float64   `json:"total"`
+	Remaining        float64   `json:"remaining"`
+	RemainingPercent float64   `json:"remainingPercent"`
+	ResetAt          time.Time `json:"resetAt,omitempty"`
+	Unlimited        bool      `json:"unlimited,omitempty"`
+	Unit             string    `json:"unit,omitempty"` // "requests" | "tokens" | "percent"
 }
 
 // Snapshot is the whole picture for one provider — multiple Windows + plan
@@ -37,9 +37,9 @@ type Snapshot struct {
 // credential; ProviderID is the provider record (so the fetcher can stash
 // custom Data fields if needed).
 type Params struct {
-	Token       string
-	ProviderID  string
-	Extra       map[string]any
+	Token      string
+	ProviderID string
+	Extra      map[string]any
 }
 
 // LiveFetcher is the vendor contract. Implementations should not cache —

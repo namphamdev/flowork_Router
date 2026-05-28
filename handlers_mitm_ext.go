@@ -43,8 +43,8 @@ func mitmCaptureToggleHandler(w http.ResponseWriter, r *http.Request) {
 	// Persist toggle to kv so survives restart
 	d, _ := store.Open()
 	_ = store.SaveTunnelState(d, &store.TunnelState{}) // touch to ensure kv ready
-	_, _ = d.Exec(`INSERT INTO kv (k, v, updatedAt) VALUES ('mitm:capture','`+
-		map[bool]string{true: "true", false: "false"}[body.Enabled]+
+	_, _ = d.Exec(`INSERT INTO kv (k, v, updatedAt) VALUES ('mitm:capture','` +
+		map[bool]string{true: "true", false: "false"}[body.Enabled] +
 		`', datetime('now')) ON CONFLICT(k) DO UPDATE SET v=excluded.v, updatedAt=excluded.updatedAt`)
 	writeJSON(w, http.StatusOK, map[string]any{"enabled": body.Enabled})
 }
@@ -96,21 +96,21 @@ func mitmRecentFullHandler(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		out = append(out, map[string]any{
-			"id":           id,
-			"ts":           ts,
-			"providerId":   providerID,
-			"model":        model,
-			"statusCode":   status,
-			"error":        errStr,
-			"durationMs":   dur,
-			"reqBodyLen":   reqLen,
-			"respBodyLen":  respLen,
+			"id":          id,
+			"ts":          ts,
+			"providerId":  providerID,
+			"model":       model,
+			"statusCode":  status,
+			"error":       errStr,
+			"durationMs":  dur,
+			"reqBodyLen":  reqLen,
+			"respBodyLen": respLen,
 		})
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"data":            out,
-		"count":           len(out),
-		"captureEnabled":  MITMCaptureEnabled(),
+		"data":           out,
+		"count":          len(out),
+		"captureEnabled": MITMCaptureEnabled(),
 	})
 }
 

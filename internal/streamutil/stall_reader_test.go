@@ -164,8 +164,8 @@ func TestStallReader_NormalEOFNotMisreportedAsStall(t *testing.T) {
 	sr := NewStallReader(src, 200*time.Millisecond)
 	defer sr.Close()
 	buf := make([]byte, 4)
-	_, _ = sr.Read(buf)         // 4 bytes
-	_, err := sr.Read(buf)      // EOF
+	_, _ = sr.Read(buf)    // 4 bytes
+	_, err := sr.Read(buf) // EOF
 	if !errors.Is(err, io.EOF) {
 		t.Fatalf("expected EOF, got %v", err)
 	}

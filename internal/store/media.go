@@ -22,9 +22,9 @@ const (
 // MediaProvider — single media-category provider config.
 type MediaProvider struct {
 	ID        string    `json:"id"`
-	Category  string    `json:"category"`  // embedding|text-to-image|tts|stt|web-fetch-search
+	Category  string    `json:"category"` // embedding|text-to-image|tts|stt|web-fetch-search
 	Name      string    `json:"name"`
-	Provider  string    `json:"provider"`  // openai|stability|elevenlabs|deepgram|tavily|brave|...
+	Provider  string    `json:"provider"` // openai|stability|elevenlabs|deepgram|tavily|brave|...
 	BaseURL   string    `json:"baseUrl"`
 	APIKey    string    `json:"apiKey,omitempty"`
 	Models    []string  `json:"models"`

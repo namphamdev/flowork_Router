@@ -37,8 +37,8 @@ type pendingFetch struct {
 
 var (
 	cacheMu  sync.Mutex
-	cache    = map[string]cacheEntry{}
-	pending  = map[string]*pendingFetch{}
+	cache             = map[string]cacheEntry{}
+	pending           = map[string]*pendingFetch{}
 	httpDoer HTTPDoer = &http.Client{Timeout: fetchTimeout}
 )
 

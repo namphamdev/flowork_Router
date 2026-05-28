@@ -88,11 +88,11 @@ func (a *assemblyAIProvider) Transcribe(ctx context.Context, req Request) (Resul
 			return Result{}, fmt.Errorf("poll: %w", err)
 		}
 		var poll struct {
-			Status      string  `json:"status"`
-			Text        string  `json:"text"`
-			LanguageCode string  `json:"language_code,omitempty"`
+			Status        string  `json:"status"`
+			Text          string  `json:"text"`
+			LanguageCode  string  `json:"language_code,omitempty"`
 			AudioDuration float64 `json:"audio_duration,omitempty"`
-			Error       string  `json:"error,omitempty"`
+			Error         string  `json:"error,omitempty"`
 		}
 		if err := json.Unmarshal(pollRaw, &poll); err != nil {
 			return Result{}, fmt.Errorf("poll parse: %w", err)

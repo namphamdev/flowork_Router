@@ -77,15 +77,15 @@ func DeleteMCPServer(d *sql.DB, id string) error {
 // ── Tunnel State (singleton) ───────────────────────────────────────────
 
 type TunnelState struct {
-	CloudflareEnabled    bool   `json:"cloudflareEnabled"`
-	CloudflareURL        string `json:"cloudflareUrl,omitempty"`
-	CloudflareToken      string `json:"cloudflareToken,omitempty"`
-	CloudflarePID        int    `json:"cloudflarePid,omitempty"`
-	TailscaleInstalled   bool   `json:"tailscaleInstalled"`
-	TailscaleEnabled     bool   `json:"tailscaleEnabled"`
-	TailscaleURL         string `json:"tailscaleUrl,omitempty"`
-	DashboardAccess      bool   `json:"dashboardAccess"`
-	UpdatedAt            string `json:"updatedAt"`
+	CloudflareEnabled  bool   `json:"cloudflareEnabled"`
+	CloudflareURL      string `json:"cloudflareUrl,omitempty"`
+	CloudflareToken    string `json:"cloudflareToken,omitempty"`
+	CloudflarePID      int    `json:"cloudflarePid,omitempty"`
+	TailscaleInstalled bool   `json:"tailscaleInstalled"`
+	TailscaleEnabled   bool   `json:"tailscaleEnabled"`
+	TailscaleURL       string `json:"tailscaleUrl,omitempty"`
+	DashboardAccess    bool   `json:"dashboardAccess"`
+	UpdatedAt          string `json:"updatedAt"`
 }
 
 const tunnelKey = "tunnel:state"
@@ -136,16 +136,16 @@ func SaveLocalePref(d *sql.DB, p *LocalePref) error {
 // ── CLI Tool State (per-toolId detection cache) ────────────────────────
 
 type CLIToolState struct {
-	ToolID          string            `json:"toolId"`     // claude|codex|cursor|cline|...
-	Installed       bool              `json:"installed"`
-	HasCredentials  bool              `json:"hasCredentials"`
-	BinaryPath      string            `json:"binaryPath,omitempty"`
-	CredentialsPath string            `json:"credentialsPath,omitempty"`
-	Version         string            `json:"version,omitempty"`
-	Settings        map[string]any    `json:"settings,omitempty"`
-	Status          string            `json:"status"` // ok|missing|stale|error
-	Notes           string            `json:"notes,omitempty"`
-	UpdatedAt       string            `json:"updatedAt"`
+	ToolID          string         `json:"toolId"` // claude|codex|cursor|cline|...
+	Installed       bool           `json:"installed"`
+	HasCredentials  bool           `json:"hasCredentials"`
+	BinaryPath      string         `json:"binaryPath,omitempty"`
+	CredentialsPath string         `json:"credentialsPath,omitempty"`
+	Version         string         `json:"version,omitempty"`
+	Settings        map[string]any `json:"settings,omitempty"`
+	Status          string         `json:"status"` // ok|missing|stale|error
+	Notes           string         `json:"notes,omitempty"`
+	UpdatedAt       string         `json:"updatedAt"`
 }
 
 const cliToolKVPrefix = "clitool:"

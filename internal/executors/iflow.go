@@ -45,11 +45,11 @@ func (i *iflowExecutor) headers(p *store.ProviderConnection) map[string]string {
 	apiKey, _ := p.Data[store.CfgAPIKey].(string)
 	sig := iflowSignature(ua, sessionID, ts, apiKey)
 	h := map[string]string{
-		"User-Agent":     ua,
-		"X-Session-ID":   sessionID,
-		"X-Timestamp":    strconv.FormatInt(ts, 10),
-		"X-Signature":    sig,
-		"Authorization":  "Bearer " + apiKey,
+		"User-Agent":    ua,
+		"X-Session-ID":  sessionID,
+		"X-Timestamp":   strconv.FormatInt(ts, 10),
+		"X-Signature":   sig,
+		"Authorization": "Bearer " + apiKey,
 	}
 	return h
 }

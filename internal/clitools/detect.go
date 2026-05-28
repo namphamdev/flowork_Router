@@ -13,18 +13,18 @@ import (
 
 // Status — per-tool detection snapshot.
 type Status struct {
-	ID              string         `json:"id"`
-	DisplayName     string         `json:"displayName"`
-	Installed       bool           `json:"installed"`
-	BinaryPath      string         `json:"binaryPath,omitempty"`
-	SettingsExists  bool           `json:"settingsExists"`
-	SettingsPath    string         `json:"settingsPath"`
-	HasFlowRouter   bool           `json:"hasFlowRouter"`
-	Format          ConfigFormat   `json:"format"`
-	BaseURL         string         `json:"baseUrl,omitempty"`
-	TokenSet        bool           `json:"tokenSet"`
-	Settings        map[string]any `json:"settings,omitempty"`
-	ErrorMessage    string         `json:"errorMessage,omitempty"`
+	ID             string         `json:"id"`
+	DisplayName    string         `json:"displayName"`
+	Installed      bool           `json:"installed"`
+	BinaryPath     string         `json:"binaryPath,omitempty"`
+	SettingsExists bool           `json:"settingsExists"`
+	SettingsPath   string         `json:"settingsPath"`
+	HasFlowRouter  bool           `json:"hasFlowRouter"`
+	Format         ConfigFormat   `json:"format"`
+	BaseURL        string         `json:"baseUrl,omitempty"`
+	TokenSet       bool           `json:"tokenSet"`
+	Settings       map[string]any `json:"settings,omitempty"`
+	ErrorMessage   string         `json:"errorMessage,omitempty"`
 }
 
 // Detect — full status for one tool.

@@ -82,9 +82,9 @@ func fetchProviderModels(ctx context.Context, baseURL, apiKey, format string) []
 // can copy to talk to flow_router.
 func providersClientHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
-		"baseURL":     "http://127.0.0.1:2402/v1",
-		"apiKeyEnv":   "FLOW_ROUTER_API_KEY",
-		"compatible":  []string{"openai", "anthropic", "gemini"},
+		"baseURL":    "http://127.0.0.1:2402/v1",
+		"apiKeyEnv":  "FLOW_ROUTER_API_KEY",
+		"compatible": []string{"openai", "anthropic", "gemini"},
 		"endpoints": map[string]string{
 			"chat":      "/v1/chat/completions",
 			"messages":  "/v1/messages",
@@ -225,7 +225,7 @@ func apiChatHandler(w http.ResponseWriter, r *http.Request) {
 // v1IndexHandler — GET /v1: capability index.
 func v1IndexHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
-		"service": "flow_router",
+		"service":  "flow_router",
 		"dialects": []string{"openai", "anthropic", "gemini"},
 		"endpoints": []string{
 			"/v1/chat/completions", "/v1/messages", "/v1/responses",

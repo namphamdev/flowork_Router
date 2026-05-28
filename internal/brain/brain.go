@@ -12,6 +12,7 @@
 //   - $FLOW_ROUTER_DATA/brain/flowork-brain.sqlite
 //   - <executable_dir>/brain/flowork-brain.sqlite  (portable: ship brain/ next to binary)
 //   - ~/.flow_router/brain/flowork-brain.sqlite
+//
 // If no DB is present, brain enrichment is simply skipped (plug-and-play):
 // Flow Router keeps working as a plain proxy.
 package brain

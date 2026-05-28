@@ -14,14 +14,14 @@ import (
 // Skill — reusable prompt template.
 type Skill struct {
 	ID           string    `json:"id"`
-	Name         string    `json:"name"`         // slug, used in URL/dispatch
+	Name         string    `json:"name"` // slug, used in URL/dispatch
 	Description  string    `json:"description"`
 	SystemPrompt string    `json:"systemPrompt"`
 	UserTemplate string    `json:"userTemplate"` // template w/ {{var}} placeholders
 	DefaultModel string    `json:"defaultModel"`
 	Temperature  float64   `json:"temperature"`
 	MaxTokens    int       `json:"maxTokens"`
-	Variables    []string  `json:"variables"`    // list of {{var}} names extracted
+	Variables    []string  `json:"variables"` // list of {{var}} names extracted
 	CreatedAt    time.Time `json:"createdAt"`
 	UpdatedAt    time.Time `json:"updatedAt"`
 }

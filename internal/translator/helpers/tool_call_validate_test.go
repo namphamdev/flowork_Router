@@ -7,15 +7,15 @@ import (
 
 func TestToolIDValid_AcceptsAndRejects(t *testing.T) {
 	cases := map[string]bool{
-		"":                    false,
-		"call_abc-123_x":      true,
-		"call_ok":             true,
-		"call with space":     false,
-		"call!bang":           false,
-		"id/with/slash":       false,
-		"abc.123":             false,
-		"____":                true,
-		"a-b-c-d-1-2-3":       true,
+		"":                false,
+		"call_abc-123_x":  true,
+		"call_ok":         true,
+		"call with space": false,
+		"call!bang":       false,
+		"id/with/slash":   false,
+		"abc.123":         false,
+		"____":            true,
+		"a-b-c-d-1-2-3":   true,
 	}
 	for in, want := range cases {
 		if got := toolIDValid(in); got != want {
@@ -26,11 +26,11 @@ func TestToolIDValid_AcceptsAndRejects(t *testing.T) {
 
 func TestSanitizeToolID(t *testing.T) {
 	cases := map[string]string{
-		"call_abc":             "call_abc",
-		"hello world":          "helloworld",
-		"id/with/!@#":          "idwith",
-		"!!@@##":               "",
-		"a-b_c-1":              "a-b_c-1",
+		"call_abc":    "call_abc",
+		"hello world": "helloworld",
+		"id/with/!@#": "idwith",
+		"!!@@##":      "",
+		"a-b_c-1":     "a-b_c-1",
 	}
 	for in, want := range cases {
 		if got := sanitizeToolID(in); got != want {

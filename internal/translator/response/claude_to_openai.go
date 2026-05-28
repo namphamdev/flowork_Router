@@ -34,12 +34,12 @@ func ClaudeToOpenAI(body map[string]any) map[string]any {
 	usage := buildOpenAIUsageFromAnthropic(usageIn)
 
 	return map[string]any{
-		"id":      id,
-		"object":  "chat.completion",
-		"model":   model,
+		"id":     id,
+		"object": "chat.completion",
+		"model":  model,
 		"choices": []map[string]any{{
-			"index":   0,
-			"message": map[string]any{"role": "assistant", "content": text},
+			"index":         0,
+			"message":       map[string]any{"role": "assistant", "content": text},
 			"finish_reason": finishReason,
 		}},
 		"usage": usage,

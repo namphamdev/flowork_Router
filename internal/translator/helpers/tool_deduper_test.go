@@ -11,7 +11,7 @@ func makeOpenAITools(names ...string) []any {
 	out := make([]any, len(names))
 	for i, n := range names {
 		out[i] = map[string]any{
-			"type": "function",
+			"type":     "function",
 			"function": map[string]any{"name": n},
 		}
 	}

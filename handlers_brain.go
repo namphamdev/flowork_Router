@@ -88,10 +88,12 @@ func brainExploreHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // brainConstitutionHandler — sacred rules from the knowledge brain.
-//   GET    /api/brain/constitution[?limit=N]  — list
-//   POST   /api/brain/constitution            — add {section,content,amplitude,source}
-//   PUT    /api/brain/constitution            — update {id,content,amplitude}
-//   DELETE /api/brain/constitution?id=N        — soft-delete (tombstone)
+//
+//	GET    /api/brain/constitution[?limit=N]  — list
+//	POST   /api/brain/constitution            — add {section,content,amplitude,source}
+//	PUT    /api/brain/constitution            — update {id,content,amplitude}
+//	DELETE /api/brain/constitution?id=N        — soft-delete (tombstone)
+//
 // Writes make flow_router the sole brain owner (option C); deletes are
 // tombstones (never hard DROP), honoring the brain's append-only doctrine.
 func brainConstitutionHandler(w http.ResponseWriter, r *http.Request) {

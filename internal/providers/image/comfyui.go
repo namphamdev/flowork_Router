@@ -20,7 +20,7 @@ func (c *comfyuiProvider) Generate(ctx context.Context, req Request) (*Result, e
 		base = "http://127.0.0.1:8188"
 	}
 	body, _ := json.Marshal(map[string]any{
-		"prompt": req.Prompt,
+		"prompt":   req.Prompt,
 		"workflow": defaultStr(stringFromExtra(req.Extra, "workflow"), "default"),
 	})
 	r, err := http.NewRequestWithContext(ctx, http.MethodPost, base+"/prompt", bytes.NewReader(body))

@@ -222,17 +222,17 @@ func usageRequestDetailsHandler(w http.ResponseWriter, r *http.Request) {
 		COALESCE(error, ''), durationMs
 		FROM requestDetails WHERE id = ?`, id)
 	var rd struct {
-		ID          int
-		Ts, APIKey  string
-		ProviderID  string
-		Model       string
-		ClientIP    string
-		ClientUA    string
-		ReqBody     string
-		RespBody    string
-		StatusCode  int
-		Error       string
-		DurationMs  int
+		ID         int
+		Ts, APIKey string
+		ProviderID string
+		Model      string
+		ClientIP   string
+		ClientUA   string
+		ReqBody    string
+		RespBody   string
+		StatusCode int
+		Error      string
+		DurationMs int
 	}
 	if err := row.Scan(&rd.ID, &rd.Ts, &rd.APIKey, &rd.ProviderID, &rd.Model, &rd.ClientIP, &rd.ClientUA, &rd.ReqBody, &rd.RespBody, &rd.StatusCode, &rd.Error, &rd.DurationMs); err != nil {
 		if err == sql.ErrNoRows {
@@ -243,18 +243,18 @@ func usageRequestDetailsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"id":         rd.ID,
-		"ts":         rd.Ts,
-		"apiKeyId":   rd.APIKey,
-		"providerId": rd.ProviderID,
-		"model":      rd.Model,
-		"clientIp":   rd.ClientIP,
-		"clientUA":   rd.ClientUA,
+		"id":           rd.ID,
+		"ts":           rd.Ts,
+		"apiKeyId":     rd.APIKey,
+		"providerId":   rd.ProviderID,
+		"model":        rd.Model,
+		"clientIp":     rd.ClientIP,
+		"clientUA":     rd.ClientUA,
 		"requestBody":  rd.ReqBody,
 		"responseBody": rd.RespBody,
-		"statusCode": rd.StatusCode,
-		"error":      rd.Error,
-		"durationMs": rd.DurationMs,
+		"statusCode":   rd.StatusCode,
+		"error":        rd.Error,
+		"durationMs":   rd.DurationMs,
 	})
 }
 
@@ -279,13 +279,13 @@ func usageStatsHandler(w http.ResponseWriter, r *http.Request) {
 	var providerCount int
 	_ = d.QueryRow(`SELECT COUNT(DISTINCT provider) FROM usageHistory`).Scan(&providerCount)
 	writeJSON(w, http.StatusOK, map[string]any{
-		"totalRequests":     totalReq,
-		"totalPromptTokens": totalPrompt,
+		"totalRequests":         totalReq,
+		"totalPromptTokens":     totalPrompt,
 		"totalCompletionTokens": totalCompl,
-		"totalTokens":       totalPrompt + totalCompl,
-		"totalCostUsd":      totalCost,
-		"errorCount":        errCount,
-		"providerCount":     providerCount,
+		"totalTokens":           totalPrompt + totalCompl,
+		"totalCostUsd":          totalCost,
+		"errorCount":            errCount,
+		"providerCount":         providerCount,
 	})
 }
 
@@ -374,13 +374,13 @@ func usageByConnectionHandler(w http.ResponseWriter, r *http.Request, connID str
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"connectionId":      connID,
-		"requests":          cnt,
-		"promptTokens":      prompt,
-		"completionTokens":  compl,
-		"totalTokens":       prompt + compl,
-		"costUsd":           cost,
-		"avgLatencyMs":      lat,
-		"lastSeen":          lastSeen.String,
+		"connectionId":     connID,
+		"requests":         cnt,
+		"promptTokens":     prompt,
+		"completionTokens": compl,
+		"totalTokens":      prompt + compl,
+		"costUsd":          cost,
+		"avgLatencyMs":     lat,
+		"lastSeen":         lastSeen.String,
 	})
 }

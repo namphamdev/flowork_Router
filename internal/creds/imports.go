@@ -18,13 +18,13 @@ var (
 
 // ImportStatus — per-source detection result.
 type ImportStatus struct {
-	Source     string `json:"source"`
-	Path       string `json:"path"`
-	Found      bool   `json:"found"`
-	Expired    bool   `json:"expired"`
-	MaskedKey  string `json:"maskedKey,omitempty"`
-	ExpiresAt  string `json:"expiresAt,omitempty"`
-	Error      string `json:"error,omitempty"`
+	Source    string `json:"source"`
+	Path      string `json:"path"`
+	Found     bool   `json:"found"`
+	Expired   bool   `json:"expired"`
+	MaskedKey string `json:"maskedKey,omitempty"`
+	ExpiresAt string `json:"expiresAt,omitempty"`
+	Error     string `json:"error,omitempty"`
 }
 
 // DetectAll — scan all known credential file locations.

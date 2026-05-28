@@ -45,10 +45,10 @@ func (c *copilotFetcher) Fetch(ctx context.Context, p Params) (Snapshot, error) 
 	}
 
 	var parsed struct {
-		QuotaResetDate  string                    `json:"quota_reset_date,omitempty"`
-		QuotaSnapshots  map[string]copilotSnapshot `json:"quota_snapshots,omitempty"`
-		CopilotPlan     string                    `json:"copilot_plan,omitempty"`
-		AccessTypeSku   string                    `json:"access_type_sku,omitempty"`
+		QuotaResetDate string                     `json:"quota_reset_date,omitempty"`
+		QuotaSnapshots map[string]copilotSnapshot `json:"quota_snapshots,omitempty"`
+		CopilotPlan    string                     `json:"copilot_plan,omitempty"`
+		AccessTypeSku  string                     `json:"access_type_sku,omitempty"`
 	}
 	if err := json.Unmarshal(body, &parsed); err != nil {
 		return Snapshot{}, fmt.Errorf("parse: %w", err)

@@ -13,8 +13,8 @@ type treeFilter struct{}
 
 var reTreeGlyph = mustCompile(`[├└]──|│  `)
 
-func (t *treeFilter) Name() string             { return "tree" }
-func (t *treeFilter) Detect(head string) bool  { return reTreeGlyph.MatchString(head) }
+func (t *treeFilter) Name() string            { return "tree" }
+func (t *treeFilter) Detect(head string) bool { return reTreeGlyph.MatchString(head) }
 func (t *treeFilter) Apply(text string) string {
 	lines := strings.Split(text, "\n")
 	if len(lines) <= 80 {

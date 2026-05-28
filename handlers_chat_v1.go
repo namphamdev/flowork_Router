@@ -22,13 +22,13 @@ import (
 // anthropicMessagesRequest mirrors public Anthropic Messages API surface
 // (subset we accept verbatim, then translate internally).
 type anthropicMessagesRequest struct {
-	Model       string            `json:"model"`
-	Messages    []anthropicMsgIn  `json:"messages"`
-	System      json.RawMessage   `json:"system,omitempty"`
-	MaxTokens   int               `json:"max_tokens"`
-	Temperature float64           `json:"temperature,omitempty"`
-	TopP        float64           `json:"top_p,omitempty"`
-	Stream      bool              `json:"stream,omitempty"`
+	Model       string           `json:"model"`
+	Messages    []anthropicMsgIn `json:"messages"`
+	System      json.RawMessage  `json:"system,omitempty"`
+	MaxTokens   int              `json:"max_tokens"`
+	Temperature float64          `json:"temperature,omitempty"`
+	TopP        float64          `json:"top_p,omitempty"`
+	Stream      bool             `json:"stream,omitempty"`
 }
 
 type anthropicMsgIn struct {
@@ -169,11 +169,11 @@ func openaiToAnthropicResp(r *router.OpenAIResponse) map[string]any {
 		}
 	}
 	return map[string]any{
-		"id":      r.ID,
-		"type":    "message",
-		"role":    "assistant",
-		"model":   r.Model,
-		"content": []map[string]any{{"type": "text", "text": content}},
+		"id":          r.ID,
+		"type":        "message",
+		"role":        "assistant",
+		"model":       r.Model,
+		"content":     []map[string]any{{"type": "text", "text": content}},
 		"stop_reason": stop,
 		"usage": map[string]any{
 			"input_tokens":  r.Usage.PromptTokens,
@@ -221,8 +221,8 @@ func streamAsAnthropicSSE(w http.ResponseWriter, r *http.Request, req router.Ope
 		},
 	})
 	emitAnthropicEvent(w, flusher, "content_block_start", map[string]any{
-		"type":  "content_block_start",
-		"index": 0,
+		"type":          "content_block_start",
+		"index":         0,
 		"content_block": map[string]any{"type": "text", "text": ""},
 	})
 
@@ -293,9 +293,9 @@ func (p *pipeWriter) Header() http.Header {
 	return p.header
 }
 
-func (p *pipeWriter) Write(b []byte) (int, error)  { return p.pw.Write(b) }
-func (p *pipeWriter) WriteHeader(code int)         { p.status = code }
-func (p *pipeWriter) Flush()                       {}
+func (p *pipeWriter) Write(b []byte) (int, error) { return p.pw.Write(b) }
+func (p *pipeWriter) WriteHeader(code int)        { p.status = code }
+func (p *pipeWriter) Flush()                      {}
 
 // newSSELineScanner — bufio.Scanner wrapped to surface plain-line API.
 type sseLineScanner struct {
@@ -369,11 +369,11 @@ func responsesV1Handler(w http.ResponseWriter, r *http.Request) {
 		content = resp.Choices[0].Message.Content
 	}
 	out := map[string]any{
-		"id":        resp.ID,
-		"object":    "response",
+		"id":         resp.ID,
+		"object":     "response",
 		"created_at": resp.Created,
-		"model":     resp.Model,
-		"status":    "completed",
+		"model":      resp.Model,
+		"status":     "completed",
 		"output": []map[string]any{
 			{
 				"type": "message",
@@ -449,7 +449,7 @@ func streamAsResponsesSSE(w http.ResponseWriter, r *http.Request, req router.Ope
 
 	respID := fmt.Sprintf("resp_%d", time.Now().UnixNano())
 	emitResponsesEvent(w, flusher, "response.created", map[string]any{
-		"type": "response.created",
+		"type":     "response.created",
 		"response": map[string]any{"id": respID, "object": "response", "model": req.Model, "status": "in_progress"},
 	})
 
@@ -522,9 +522,9 @@ func v1betaModelsHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			seen[s] = true
 			models = append(models, map[string]any{
-				"name":        "models/" + s,
-				"displayName": s,
-				"description": fmt.Sprintf("Served via %s", p.Name),
+				"name":                       "models/" + s,
+				"displayName":                s,
+				"description":                fmt.Sprintf("Served via %s", p.Name),
 				"supportedGenerationMethods": []string{"generateContent", "streamGenerateContent"},
 			})
 		}

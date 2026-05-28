@@ -76,7 +76,7 @@ type fakeSource struct {
 	err      error
 }
 
-func (f *fakeSource) Provider() string  { return f.provider }
+func (f *fakeSource) Provider() string     { return f.provider }
 func (f *fakeSource) ExpiresAt() time.Time { v, _ := f.exp.Load().(time.Time); return v }
 func (f *fakeSource) Refresh(ctx context.Context) (time.Time, error) {
 	f.refreshN.Add(1)

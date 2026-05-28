@@ -17,8 +17,8 @@ type DedupeRule struct {
 	Strip    []Pattern
 }
 
-func exact(s string) Pattern        { return Pattern{Exact: s} }
-func re(p string) Pattern           { return Pattern{Regex: regexp.MustCompile(p)} }
+func exact(s string) Pattern { return Pattern{Exact: s} }
+func re(p string) Pattern    { return Pattern{Regex: regexp.MustCompile(p)} }
 func match(name string, p Pattern) bool {
 	if p.Exact != "" {
 		return name == p.Exact
