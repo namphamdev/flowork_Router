@@ -147,9 +147,14 @@ func DispatchChatCompletion(ctx context.Context, req OpenAIRequest) (*OpenAIResp
 	// Anthropic API as 400s ("unmatched tool_use ids" / "invalid id pattern").
 	preprocessToolCalls(&req)
 
-	// Brain enrichment: if this request targets the brain model, inject
-	// retrieved knowledge + skills before resolving the backend. No-op unless
-	// settings.Brain.Enabled and model == Brain.Model. brainInfo (nil if not
+	// Constitution: always-on sacred-rule injection (top-N from brain.constitution).
+	// Runs before knowledge retrieval so the rules sit ABOVE any retrieved
+	// snippet — doctrine wins over context. No-op when no brain DB present.
+	maybeInjectConstitution(ctx, &req, settings)
+
+	// Brain enrichment: retrieve relevant knowledge + select skills + inject
+	// as system message. With Brain.AlwaysOn true, fires for every request;
+	// otherwise gated on req.Model matching Brain.Model. brainInfo (nil if not
 	// enriched) lets us record the interaction for compounding after the answer.
 	brainInfo := maybeEnrichBrain(ctx, &req, settings)
 

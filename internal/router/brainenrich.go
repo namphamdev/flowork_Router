@@ -43,7 +43,10 @@ func maybeEnrichBrain(ctx context.Context, req *OpenAIRequest, settings *store.S
 	if trigger == "" {
 		trigger = "flowork-brain"
 	}
-	if !strings.EqualFold(strings.TrimSpace(req.Model), trigger) {
+	// AlwaysOn = brain enrichment fires for every request, regardless of the
+	// model the client picked. Without it, only requests that explicitly
+	// name `Brain.Model` reach the doctrine.
+	if !settings.Brain.AlwaysOn && !strings.EqualFold(strings.TrimSpace(req.Model), trigger) {
 		return nil
 	}
 

@@ -75,16 +75,32 @@ type Settings struct {
 
 // BrainConfig configures the brain enrichment layer.
 type BrainConfig struct {
-	Enabled         bool     `json:"enabled"`                 // master switch (default off)
+	Enabled         bool     `json:"enabled"`                 // master switch
 	Model           string   `json:"model"`                   // trigger model name (default "flowork-brain")
 	DBPath          string   `json:"dbPath,omitempty"`        // optional DB override; else env/default
 	Mode            string   `json:"mode"`                    // "augment" (default) | "brain"
 	Wings           []string `json:"wings,omitempty"`         // optional wing whitelist for retrieval
 	TopK            int      `json:"topK"`                    // knowledge snippets injected (default 5)
 	MaxSnippetChars int      `json:"maxSnippetChars"`         // per-snippet truncation (default 600)
-	Skills          bool     `json:"skills"`                  // inject relevant skills (default true)
-	SkillTopK       int      `json:"skillTopK"`               // skills injected (default 2)
+	Skills          bool     `json:"skills"`                  // inject relevant skills
+	SkillTopK       int      `json:"skillTopK"`               // skills injected (default 3)
 	Record          bool     `json:"record"`                  // queue interactions for compounding (default off)
+
+	// AlwaysOn — when true, knowledge retrieval + skill selection fires for
+	// EVERY chat request, not just those whose model matches Model. Without
+	// this the brain is only reachable by clients that explicitly ask for
+	// "flowork-brain", so all normal chats (claude-sonnet, gpt-4o, …) miss
+	// the doctrine entirely.
+	AlwaysOn bool `json:"alwaysOn"`
+
+	// InjectConstitution — when true, the top-N sacred rules from the
+	// constitution table get prepended to every request's system message.
+	// Cheap to enable (≤ 12 KB context for default knobs) and ensures the
+	// model knows the project doctrine without the agent having to upload
+	// it on every turn.
+	InjectConstitution   bool `json:"injectConstitution"`
+	ConstitutionTopK     int  `json:"constitutionTopK"`     // default 20
+	ConstitutionMaxChars int  `json:"constitutionMaxChars"` // per-rule truncation (default 600)
 }
 
 // ClaudeCliBypass short-circuits no-op requests from the Claude Code CLI
@@ -140,15 +156,21 @@ func defaultSettings() Settings {
 			MonthlyCapUsd: 60.0,
 			WarnUsd:       0.5,
 		},
-		// Brain off by default; sensible knobs ready when toggled on.
+		// Brain enrichment defaults to ON so constitution + skills + knowledge
+		// reach every chat without the agent having to opt in by name.
+		// Becomes a no-op automatically when no brain DB is present.
 		Brain: BrainConfig{
-			Enabled:         false,
-			Model:           "flowork-brain",
-			Mode:            "augment",
-			TopK:            5,
-			MaxSnippetChars: 600,
-			Skills:          true,
-			SkillTopK:       2,
+			Enabled:              true,
+			Model:                "flowork-brain",
+			Mode:                 "augment",
+			TopK:                 5,
+			MaxSnippetChars:      600,
+			Skills:               true,
+			SkillTopK:            3,
+			AlwaysOn:             true,
+			InjectConstitution:   true,
+			ConstitutionTopK:     20,
+			ConstitutionMaxChars: 600,
 		},
 		// Claude-CLI bypass ON by default — pure-local stub responses for
 		// known no-op patterns are always a token-saver and never affect
@@ -212,6 +234,28 @@ func LoadSettings(d *sql.DB) (*Settings, error) {
 	// custom-patterns, leaves it alone).
 	if !s.ClaudeCliBypass.Enabled && len(s.ClaudeCliBypass.SkipPatterns) == 0 && !s.ClaudeCliBypass.CcFilterNaming {
 		s.ClaudeCliBypass = defaultSettings().ClaudeCliBypass
+	}
+	// Brain — fill the always-on / constitution knobs (added later) when
+	// they read back as the natural zero from a pre-existing settings row.
+	// We only patch fields that are individually zero so any deliberate
+	// "off" choice survives the migration.
+	if s.Brain.ConstitutionTopK == 0 {
+		s.Brain.ConstitutionTopK = defaultSettings().Brain.ConstitutionTopK
+	}
+	if s.Brain.ConstitutionMaxChars == 0 {
+		s.Brain.ConstitutionMaxChars = defaultSettings().Brain.ConstitutionMaxChars
+	}
+	if s.Brain.SkillTopK == 0 {
+		s.Brain.SkillTopK = defaultSettings().Brain.SkillTopK
+	}
+	// AlwaysOn + InjectConstitution + Skills + Enabled are booleans, so a
+	// false reading could mean "deliberately off" OR "field absent in JSON".
+	// We default them on for the typical fresh row (all four false at once).
+	if !s.Brain.Enabled && !s.Brain.AlwaysOn && !s.Brain.InjectConstitution && !s.Brain.Skills {
+		s.Brain.Enabled = true
+		s.Brain.AlwaysOn = true
+		s.Brain.InjectConstitution = true
+		s.Brain.Skills = true
 	}
 	return &s, nil
 }
