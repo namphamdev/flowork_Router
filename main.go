@@ -88,6 +88,13 @@ func main() {
 		//   authEnforceMiddleware — OPT-IN GUI session gate (settings.RequireLogin);
 		//                         exempts /v1, /api/auth, health, static, root.
 		Handler: apiKeyMiddleware(authEnforceMiddleware(mux)),
+		// Slowloris guard: caps on every phase of the HTTP transaction so a
+		// stalled client cannot pin a server goroutine forever. ReadHeader is
+		// the most important — request-line + headers must arrive in 15s.
+		// Write/Idle are generous because /v1 streams completions for minutes.
+		ReadHeaderTimeout: 15 * time.Second,
+		IdleTimeout:       120 * time.Second,
+		WriteTimeout:      10 * time.Minute,
 	}
 
 	// Graceful shutdown: /api/shutdown fires shutdownTriggerCh; SIGINT/SIGTERM
