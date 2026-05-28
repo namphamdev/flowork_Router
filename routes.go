@@ -187,6 +187,7 @@ func registerInfraRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/proxy-pools/", proxyPoolCRUDHandler)
 	// MCP registry
 	mux.HandleFunc("/api/mcp", mcpRouterHandler)
+	mux.HandleFunc("/api/mcp/catalog", mcpCatalogHandler)
 	mux.HandleFunc("/api/mcp/", mcpRouterHandler)
 }
 
