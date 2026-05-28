@@ -237,8 +237,14 @@ func LoadSettings(d *sql.DB) (*Settings, error) {
 	}
 	// Brain — fill the always-on / constitution knobs (added later) when
 	// they read back as the natural zero from a pre-existing settings row.
-	// We only patch fields that are individually zero so any deliberate
-	// "off" choice survives the migration.
+	//
+	// Detection signal: ConstitutionTopK and ConstitutionMaxChars are new
+	// fields; if they're both still zero the JSON row pre-dates the new
+	// fields entirely. In that case the AlwaysOn / InjectConstitution /
+	// Skills booleans are also "absent in JSON" → safe to apply defaults.
+	// Rows that were saved AFTER the migration always carry non-zero
+	// ConstitutionTopK so their explicit boolean choices are preserved.
+	preMigration := s.Brain.ConstitutionTopK == 0 && s.Brain.ConstitutionMaxChars == 0
 	if s.Brain.ConstitutionTopK == 0 {
 		s.Brain.ConstitutionTopK = defaultSettings().Brain.ConstitutionTopK
 	}
@@ -248,14 +254,15 @@ func LoadSettings(d *sql.DB) (*Settings, error) {
 	if s.Brain.SkillTopK == 0 {
 		s.Brain.SkillTopK = defaultSettings().Brain.SkillTopK
 	}
-	// AlwaysOn + InjectConstitution + Skills + Enabled are booleans, so a
-	// false reading could mean "deliberately off" OR "field absent in JSON".
-	// We default them on for the typical fresh row (all four false at once).
-	if !s.Brain.Enabled && !s.Brain.AlwaysOn && !s.Brain.InjectConstitution && !s.Brain.Skills {
-		s.Brain.Enabled = true
-		s.Brain.AlwaysOn = true
-		s.Brain.InjectConstitution = true
-		s.Brain.Skills = true
+	if preMigration {
+		// Row pre-dates the new fields → restore the recommended defaults
+		// regardless of what Enabled / Skills / AlwaysOn / InjectConstitution
+		// read back as (they were all absent in the old JSON shape).
+		d := defaultSettings().Brain
+		s.Brain.Enabled = d.Enabled
+		s.Brain.AlwaysOn = d.AlwaysOn
+		s.Brain.InjectConstitution = d.InjectConstitution
+		s.Brain.Skills = d.Skills
 	}
 	return &s, nil
 }
