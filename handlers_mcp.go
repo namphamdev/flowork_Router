@@ -11,9 +11,11 @@ import (
 	"io"
 	"net/http"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/flowork-os/flowork_Router/internal/mcpsecurity"
 	"github.com/flowork-os/flowork_Router/internal/store"
 )
 
@@ -95,6 +97,13 @@ func mcpGatewayMessageHandler(w http.ResponseWriter, r *http.Request, id string)
 func mcpStdioRoundTrip(ctx context.Context, srv *store.MCPServer, msg []byte) ([]byte, error) {
 	if srv.Command == "" {
 		return nil, fmt.Errorf("stdio server missing command")
+	}
+	// Security gate: only allow well-known interpreters / wrappers. A
+	// malicious or compromised settings row could otherwise spawn arbitrary
+	// executables on the host. Operators can extend the list at runtime via
+	// mcpsecurity.Allow().
+	if !mcpsecurity.IsAllowed(srv.Command) {
+		return nil, fmt.Errorf("command %q is not on the MCP allowlist (npx/node/uvx/python/bunx/bun/deno/pnpm/yarn). Run mcpsecurity.Allow(%q) to extend.", srv.Command, filepath.Base(srv.Command))
 	}
 	if _, err := exec.LookPath(srv.Command); err != nil {
 		return nil, fmt.Errorf("command %q not found", srv.Command)
@@ -332,6 +341,11 @@ var mcpInitParams = map[string]any{
 func mcpStdioListTools(ctx context.Context, srv *store.MCPServer) ([]map[string]any, error) {
 	if srv.Command == "" {
 		return nil, fmt.Errorf("stdio server missing command")
+	}
+	// Same allowlist guard as mcpStdioRoundTrip — never spawn an arbitrary
+	// binary on behalf of a settings row.
+	if !mcpsecurity.IsAllowed(srv.Command) {
+		return nil, fmt.Errorf("command %q is not on the MCP allowlist", srv.Command)
 	}
 	if _, err := exec.LookPath(srv.Command); err != nil {
 		return nil, fmt.Errorf("command %q not found on PATH", srv.Command)
