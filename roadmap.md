@@ -117,9 +117,12 @@
 
 ---
 
-## Section 5 — Quality gate
+## Section 5 — Quality gate ✅ DONE (phase 1) 2026-05-29
 
 **Goal:** filter content low-quality sebelum jadi drawer. Spam, hallucination, gibberish, duplicate semantic, content yang too short — semua drop atau lower importance.
+
+> **Phase 1 scope**: pure heuristic library `internal/quality/quality.go` (length / repetition / whitespace ratio / char diversity) + admin test endpoint `POST /api/brain/quality/check`. Caller invoke optional pre-ingest.
+> **Defer**: embedding-based semantic duplicate (butuh embedding pipeline Section 5 Router), LLM coherence judge (mahal), ingest_log table write (schema tabel belum ada), wire ke `ingest.Submit` (file LOCKED — phase 2 via opsi caller).
 
 **Logic:**
 - Length check (min/max bytes)

@@ -4,6 +4,43 @@
 
 ---
 
+## 2026-05-29 21:00 WIB — Section 5: Quality gate (phase 1) DONE + audit + LOCK
+
+- **feat(quality)**: `internal/quality/quality.go` (LOCKED) — package standalone heuristic library. `Check(content) → Result{Allowed, Reason, Score, sub-scores}`. 4 heuristic check:
+  - **Length**: 20 bytes min, 256KB max. Sweet spot 100-10000 → score 1.0, taper outside.
+  - **Whitespace ratio**: > 80% whitespace → reject. Score = 1 - ratio.
+  - **Char diversity**: < 5 unique non-space char → reject (likely garbage / single-char spam). Capped at 20 unique = full score.
+  - **Repetition pattern**: `detectRepetition()` via 3-gram frequency analysis (input cap 16KB). > 50% same pattern → reject (spam).
+  - **Composite**: average 4 sub-scores. `>= 0.5` → Allowed.
+- **feat(handlers)**: `handlers_brain_quality.go` (LOCKED) — `POST /api/brain/quality/check` standalone admin endpoint. MaxBytesReader 512KB > internal cap 256KB → Check gets fair chance to return "too long" instead of truncation.
+- **verified end-to-end via 5 smoke test**:
+  - Good content: `allowed:true, score:0.96` (length 1.0, repetition 0.98, whitespace 0.88, diversity 1.0)
+  - Too short ("halo"): `reason: content too short`
+  - Repetition spam ("halohalohalo..."): `reason: low diversity` (caught by diversity gate first — pattern has only 4 unique chars)
+  - Low diversity ("aaaaaaaa..."): `reason: low diversity`
+  - Whitespace blow ("hi    ...    there"): `reason: mostly whitespace`
+
+### Phase 1 scope (DONE):
+- Pure heuristic library + admin endpoint.
+
+### Audit important fixes applied before lock:
+- **#1 single-pass loop**: gabung 2 separate range loops (whitespace + rune count + diversity) jadi 1 pass. CPU saving ~256KB iterasi at max input.
+- **#2 lower repetition threshold 0.50 → 0.30**: empirically 3-gram rotation `"halohalohalo"` cuma capai ~40% frequency. 30% threshold catch lebih reliable. Document rationale di const comment.
+- **#3 early-exit diversity map**: stop counting unique chars after maxDiversityCount=20 reach. Bounded memory + CPU.
+- **#4 AlgoVersion field**: tambah `"algo_version": "v1"` di Result JSON. Future-proof JSON shape — phase 2 (embedding) bisa bump ke v2 tanpa break caller parsing.
+- **#5 DisallowUnknownFields**: handler reject typo (mis. `{"contentt":"..."}` → 400 "unknown field"). Debug-friendly.
+- **documented limitation**: 7-char+ repetition cycle pattern (e.g., "halo bro halo bro") inherently dodge 3-gram detector via rotation — acceptable phase 1, fix di phase 2 via 4/5-gram atau coverage-ratio approach.
+
+### Defer ke phase berikutnya:
+- **Embedding-based semantic duplicate** (`cosine > 0.97 reject`): butuh embedding pipeline yang belum di-implement.
+- **LLM coherence judge**: expensive, defer sampai ada use case real.
+- **Language detection**: separate library, defer.
+- **Wire ke `ingest.Submit` pipeline**: file ingest LOCKED. Solusi nanti: tambah opsi `Req.SkipQualityCheck bool` di new field, atau wrapper function `SubmitWithQualityGate()` di file baru.
+- **`ingest_log` table** for rejected content audit: schema tabel belum ada.
+- **UTF-8 multi-byte rune split** di `cleaned[i:i+3]` 3-gram: byte slicing bisa split mid-rune untuk CJK content (中文 etc). Acceptable English/Indonesian, document limitation.
+
+---
+
 ## 2026-05-29 20:45 WIB — Section 2: Importance scorer re-score (phase 1) DONE + audit + LOCK
 
 - **feat(brain)**: `internal/brain/rescore.go` (LOCKED) — `RescoreBatch(ctx, opts, scorer)` iterate live drawer (deleted_at IS NULL, quarantined=0), apply scorer fn (injected, anti circular import brain↔ingest), UPDATE importance dalam atomic transaction. `RescoreOpts{Wing, Limit, ForceOverride}`. `RescoreReport{Scanned, Updated, Unchanged, Preserved, Errors, SampleDelta}`.
