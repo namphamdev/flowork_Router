@@ -24,3 +24,4 @@ secret.key
 # Private notes
 notes_private.md
 notes_private/
+.scratch/

@@ -243,4 +243,15 @@ func registerAuthRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/mesh/discover", meshDiscoverHandler)
 	mux.HandleFunc("/api/mesh/peer", meshUpsertPeerHandler)
 	mux.HandleFunc("/api/mesh/peer/block", meshBlockHandler)
+
+	// Section 14-23 mesh stack phase 1 (schema only — single-owner no real mesh).
+	mux.HandleFunc("/api/mesh/stack/overview", MeshStackOverviewHandler)
+
+	// Section 24-27 LLM provider + LocalAI + pricing + policy.
+	mux.HandleFunc("/api/provider/chains", ProviderChainsHandler)
+	mux.HandleFunc("/api/provider/calls", ProviderCallsHandler)
+	mux.HandleFunc("/api/localai/models", LocalAIModelsHandler)
+	mux.HandleFunc("/api/pricing/rules", PricingRulesHandler)
+	mux.HandleFunc("/api/policy/budgets", PolicyBudgetsHandler)
+	mux.HandleFunc("/api/policy/violations", PolicyViolationsHandler)
 }

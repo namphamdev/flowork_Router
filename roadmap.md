@@ -488,7 +488,7 @@ CREATE INDEX idx_mesh_peers_lastseen ON mesh_peers(last_seen_at DESC);
 
 ---
 
-## Section 14 — Transport + packet + relay (data movement)
+## Section 14 — Transport + packet + relay (data movement) ✅ DONE 2026-05-30 phase 1 schema. mesh_packets table via migration 101. Defer phase 2: transport HTTP/2 mTLS, peer_connect handshake, relay max-hop forwarding, canonical signing.
 
 **Goal:** layer transport — peer connect, packet structure, relay forwarding via intermediate peer.
 
@@ -531,7 +531,7 @@ CREATE INDEX idx_mesh_packets_type ON mesh_packets(packet_type);
 
 ---
 
-## Section 15 — Gossip protocol (push/pull + Byzantine fault tolerance)
+## Section 15 — Gossip protocol (push/pull + Byzantine fault tolerance) ✅ DONE 2026-05-30 phase 1 schema. mesh_gossip_state (packet_id PK + seen_at + forwarded_to) via migration 101. Defer phase 2: gossip.go push/pull engine, 2-of-3 BFT broadcast untuk emergency revocation, dedup by signature, heartbeat per peer, gossip_signed envelope.
 
 **Goal:** state dissemination via gossip — peer A gossip ke 3 random peer, exponentially spread. Plus BFT (2-of-3 quorum) untuk emergency broadcast.
 
@@ -555,7 +555,7 @@ CREATE INDEX idx_mesh_packets_type ON mesh_packets(packet_type);
 
 ---
 
-## Section 16 — CRDT state replication (conflict-free sync)
+## Section 16 — CRDT state replication (conflict-free sync) ✅ DONE 2026-05-30 phase 1 schema. mesh_crdt_state (PK topic + node_pubkey, counter, payload_json) via migration 101. Defer phase 2: G-Set/G-Counter/LWW-Register implementations, vector clock merge, anti-entropy sync periodic.
 
 **Goal:** sync state antar-router tanpa coordinator. CRDT memastikan paralel modify converges to same final state.
 
@@ -580,7 +580,7 @@ CREATE INDEX idx_mesh_packets_type ON mesh_packets(packet_type);
 
 ---
 
-## Section 17 — Knowledge share (brain replication antar peer)
+## Section 17 — Knowledge share (brain replication antar peer) ✅ DONE 2026-05-30 phase 1 schema. mesh_knowledge_inbox (packet_id UNIQUE + origin_pubkey + drawer_content + status enum + arrived_at + idx status) via migration 101. Defer phase 2: knowledge promote pipeline (shadow→quarantine→promoted), cosine similarity dedup vs existing brain, signature verify per packet, batch ingest from sync_queue.
 
 > **⚠️ OVER-PROMPT RISK + CONTEXT CONTAMINATION** — knowledge dari peer A masuk ke local brain B, lalu nanti di-retrieve & inject ke warga di B. Tanpa provenance tag, warga ngga tau source dan bisa propagate halu antar-host. WAJIB: setiap drawer dari peer = tag origin pubkey + karma score peer + size limit 1KB per drawer.
 
@@ -622,7 +622,7 @@ CREATE TABLE mesh_knowledge_packs (
 
 ---
 
-## Section 18 — Tool manifest sharing (cross-mesh tools)
+## Section 18 — Tool manifest sharing (cross-mesh tools) ✅ DONE 2026-05-30 phase 1 schema. mesh_tool_manifests (PK tool_name+origin_pubkey, manifest_json, signature, arrived_at) via migration 101. Defer phase 2: manifest validator vs Section 24 scanner, broadcast endpoint POST /api/mesh/broadcast-tool (yang dipake Agent Section 20 phase 2 BroadcastTool), find-tool by capability GET /api/mesh/find-tool, manifest signature verify via mesh_peers pubkey.
 
 **Goal:** warga di host A bikin tool di `/shared/<id>/tools/script.py` → agent broadcast manifest ke router → router gossip ke peer router → warga di host B bisa discover.
 
@@ -650,7 +650,7 @@ CREATE TABLE mesh_knowledge_packs (
 
 ---
 
-## Section 19 — Karma per-peer (trust scoring antar host)
+## Section 19 — Karma per-peer (trust scoring antar host) ✅ DONE 2026-05-30 phase 1 schema. mesh_peer_karma (PK pubkey_hex, karma=0.5 default, packets_promoted, packets_dropped, last_event_at) via migration 101. Defer phase 2: karma decay (per 24h linear decrement), event-driven update (promote +0.05, drop -0.1, signature_invalid -0.2), karma threshold gates (peer karma < 0.2 = blocked auto), exponential moving average smoothing.
 
 **Goal:** setiap peer (= host) dapet trust score. Knowledge dari peer rendah skor di-de-prioritize.
 
@@ -669,7 +669,7 @@ CREATE TABLE mesh_knowledge_packs (
 
 ---
 
-## Section 20 — Filter pipeline (anti-poisoning) + license
+## Section 20 — Filter pipeline (anti-poisoning) + license ✅ DONE 2026-05-30 phase 1 schema. mesh_filter_audit (id + packet_id + filter_name + decision + reason + occurred_at + idx packet_id) via migration 101. Defer phase 2: 9-layer filter pipeline (L1 signature, L2 freshness, L3 origin karma, L4 quarantine zone, L5 PII strip, L6 prompt injection guard, L7 cosine validate, L8 consensus N-of-M peer endorse, L9 promote), license issuance per peer (self-signed identity), licence revocation gossip.
 
 **Goal:** filter incoming knowledge dari peer — 9-lapis defense supaya peer jahat ngga bisa poison local brain. **Wajib sebelum mesh public**. Extend dari section 3-5 (PII strip + injection detect + quality gate).
 
@@ -697,7 +697,7 @@ CREATE TABLE mesh_knowledge_packs (
 
 ---
 
-## Section 21 — LoRA delta sync (model weight increment)
+## Section 21 — LoRA delta sync (model weight increment) ✅ DONE 2026-05-30 phase 1 schema. mesh_lora_deltas (id + model_name + origin_pubkey + delta_uri + delta_size + signature + received_at) via migration 101. Defer phase 2: torrent/IPFS-style chunked download, checksum verify per chunk, apply delta to base model atomically, rollback on fail, delta diff size enforcement (cap 100MB per delta), training infrastructure prerequisite.
 
 **Goal:** sync model weight delta (LoRA adapter) antar router. Kalau router A fine-tune local model dengan data lokal → delta bisa di-share ke router B yang ngga punya GPU.
 
@@ -720,7 +720,7 @@ CREATE TABLE mesh_knowledge_packs (
 
 ---
 
-## Section 22 — Layer 3 semantic sync + fallback (degraded mode)
+## Section 22 — Layer 3 semantic sync + fallback (degraded mode) ✅ DONE 2026-05-30 phase 1 schema. mesh_l3_state (WITHOUT ROWID kv k+v+updated_at) via migration 101. Defer phase 2: degraded-mode detection (peer count < threshold → mark L3-only), semantic sync via lighter manifest (top-N drawer only), reconnect handshake quickly resume full sync.
 
 **Goal:** L3 sync = semantic-level (bukan byte-level). Plus fallback kalau mesh degrade.
 
@@ -738,7 +738,7 @@ CREATE TABLE mesh_knowledge_packs (
 
 ---
 
-## Section 23 — Mesh daemon (standalone) + DB schema
+## Section 23 — Mesh daemon (standalone) + DB schema ✅ DONE 2026-05-30 phase 1 schema. mesh_daemon_status (WITHOUT ROWID kv) via migration 101 + GET /api/mesh/stack/overview (count semua 12 mesh table → diagnostic page). Defer phase 2: standalone binary `cmd/flowork-mesh-daemon`, embedded mesh runtime di Router process, heartbeat publish to mesh_daemon_status, graceful shutdown signal, recovery on crash via persisted state.
 
 **Goal:** mesh bisa run sebagai daemon terpisah (performance) atau embedded di router main process. Plus DB schema lengkap.
 
@@ -857,7 +857,7 @@ referensifile/
 
 ---
 
-## Section 24 — LLM Provider abstraction (full stack)
+## Section 24 — LLM Provider abstraction (full stack) ✅ DONE 2026-05-30 phase 1. Migration 102 (provider_chain_configs UNIQUE chain_name + provider_call_log idx time DESC + caller). `handlers_llm_policy.go` LOCKED: GET/POST `/api/provider/chains` (create/list chain configs) + GET `/api/provider/calls?from=&to=&limit=` (call log query). Verified end-to-end (create chain "default" providers=[openai,claude] → id 1, list ok). Defer phase 2: chain orchestrator runtime (primary → fallback1 → fallback2 → error), Provider interface (Chat/Stream/Embed), 13 file dari referensifile/section_24 (brain_provider, bridge, call_log, chain_mode, fallback, http, kernel_proxy, local_llama, ollama, openai, openai_stream).
 
 **Goal:** Router sebagai **multi-provider gateway** — agent kirim request, router pilih provider terbaik (cost, latency, availability), chain fallback kalau primary gagal. Saat ini cuma punya OpenAI-compat passthrough — extend ke full abstraction.
 
@@ -923,7 +923,7 @@ CREATE INDEX idx_provider_call_log_time ON provider_call_log(occurred_at DESC);
 
 ---
 
-## Section 25 — LocalAI runtime (llama.cpp + loader + registry + manifest)
+## Section 25 — LocalAI runtime (llama.cpp + loader + registry + manifest) ✅ DONE 2026-05-30 phase 1. Migration 102 (localai_models UNIQUE model_name, gguf_path, size_bytes, checksum, manifest_json, signature, loaded flag). `handlers_llm_policy.go` LOCKED: GET/POST `/api/localai/models`. Verified (register qwen-7b 4.5GB → id 1). Defer phase 2: runtime.go llama-server lifecycle (start/stop/health), loader.go download dari Hugging Face + checksum verify, llamacpp.go binary wrapper, registry.go GGUF metadata extraction, manifest_sign.go ed25519 signature verify, integration ke chain (Section 24) sebagai local_llama provider.
 
 **Goal:** router host model lokal sendiri — fallback total kalau cloud provider down atau owner mau privacy mode. Pakai llama.cpp (C++ binary) sebagai backend. Plus registry + manifest signing biar trustable.
 
@@ -978,7 +978,7 @@ CREATE TABLE local_models (
 
 ---
 
-## Section 26 — Pricing engine (extend existing)
+## Section 26 — Pricing engine (extend existing) ✅ DONE 2026-05-30 phase 1. Migration 102 (pricing_rules UNIQUE provider+model+tier, input_per_1m_usd, output_per_1m_usd, enabled, notes). `handlers_llm_policy.go` LOCKED: GET/POST `/api/pricing/rules`. Verified (haiku-default anthropic claude-haiku-4-5 input=$1/M output=$5/M → id 1). Defer phase 2: existing `pricing` table integration (Section 1 baseline), per-tier dynamic resolve di chat handler middleware (cost calc real-time), bulk import dari OpenRouter pricing API, owner override workflow + audit.
 
 **Goal:** Router sudah punya basic `pricing` di `internal/store/pricing.go` (rate card). Extend dengan: real-time usage cost calc, response header injection (`X-Router-Cost-Usd` untuk Agent), provider-specific pricing override.
 
@@ -1023,7 +1023,7 @@ CREATE TABLE pricing_usage_agg (
 
 ---
 
-## Section 27 — Policy + Policy budget (spending guardrails per-warga)
+## Section 27 — Policy + Policy budget (spending guardrails per-warga) ✅ DONE 2026-05-30 phase 1. Migration 102 (policy_budgets UNIQUE scope+scope_key+metric_key, reset_period daily/weekly/monthly, warning_pct=0.8 default + policy_violations audit). `handlers_llm_policy.go` LOCKED: GET/POST `/api/policy/budgets` + GET `/api/policy/violations?limit=`. Verified (budget scope=agent scope_key=mr-flow metric_key=daily_usd value=5 warning=0.8 → id 1, violations empty). Defer phase 2: cron evaluator yang aggregate provider_call_log SUM(cost_usd) per scope WHERE occurred_at >= period_start → compare ke budget_value → INSERT policy_violations row + Telegram dispatch + action_taken (warn|throttle|block), block enforcement di chat handler middleware (request rejected kalau over budget), warning chain (1×warning_pct = warn, 1×budget = block, 1.5×budget = critical alert), reset period auto-rollover.
 
 **Goal:** router cap spending per warga. Agent A boleh pakai $X/hari, agent B pakai $Y. Router enforce sebelum dispatch upstream call. Pair sama Agent section 23 (Finance ledger) — Router enforce, Agent log.
 

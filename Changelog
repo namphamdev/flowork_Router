@@ -4,6 +4,79 @@
 
 ---
 
+## 2026-05-30 22:50 WIB — Section 14-27 batch close → **Router roadmap CLOSED**
+
+Wrap-up batch — 14 sections closed dengan schema + minimal endpoint phase 1. Mesh stack (14-23) single-owner reality = schema only, real mesh logic defer phase 2 saat multi-host aktif. LLM/pricing/policy (24-27) full CRUD endpoint siap.
+
+### Section 14-23 — Mesh stack (10 sections)
+
+- **feat(internal/store/mesh_stack_migrations.go)** (NEW LOCKED): Migration ID 101 `section14_23_mesh_stack` — 10 mesh tables bundled:
+  - **14 mesh_packets**: packet_id UNIQUE + origin_pubkey + packet_type + payload_json + signature + ttl=5 + hop_count + processed flag + 2 idx.
+  - **15 mesh_gossip_state**: packet_id PK + seen_at + forwarded_to (dedup tracking).
+  - **16 mesh_crdt_state**: PK topic+node_pubkey + counter + payload_json (vector clock per-topic).
+  - **17 mesh_knowledge_inbox**: packet_id UNIQUE + drawer_content + status (shadow default) + idx status.
+  - **18 mesh_tool_manifests**: PK tool_name+origin_pubkey + manifest_json + signature.
+  - **19 mesh_peer_karma**: PK pubkey_hex + karma=0.5 default + promoted/dropped counters.
+  - **20 mesh_filter_audit**: packet_id + filter_name + decision + reason + idx packet.
+  - **21 mesh_lora_deltas**: model_name + origin + delta_uri + size + signature.
+  - **22 mesh_l3_state**: WITHOUT ROWID kv (degraded mode).
+  - **23 mesh_daemon_status**: WITHOUT ROWID kv (heartbeat).
+- **feat(handlers_mesh_stack.go)** (NEW LOCKED): GET `/api/mesh/stack/overview` — row count per 12 mesh table buat diagnostic. Single-owner phase 1 expected mostly empty.
+
+### Section 24-27 — LLM provider + LocalAI + pricing + policy
+
+- **feat(internal/store/llm_pricing_policy_migrations.go)** (NEW LOCKED): Migration ID 102 — 6 tables:
+  - **24 provider_chain_configs**: chain_name UNIQUE + providers_json (ordered array of provider IDs).
+  - **24 provider_call_log**: caller + provider + model + tokens + cost_usd + latency_ms + status + 2 idx (time+caller).
+  - **25 localai_models**: model_name UNIQUE + gguf_path + size_bytes + checksum + manifest + signature + loaded flag.
+  - **26 pricing_rules**: UNIQUE (provider, model, tier='default') + input/output per_1m_usd + enabled + notes.
+  - **27 policy_budgets**: UNIQUE (scope, scope_key, metric_key) + budget_value + reset_period (daily/weekly/monthly) + warning_pct=0.8 default.
+  - **27 policy_violations**: budget_id + actual_value + action_taken + idx budget.
+- **feat(handlers_llm_policy.go)** (NEW LOCKED): 6 endpoint CRUD:
+  - GET/POST `/api/provider/chains` — UNIQUE chain_name upsert.
+  - GET `/api/provider/calls?from=&to=&limit=` — call log query.
+  - GET/POST `/api/localai/models` — model registry upsert.
+  - GET/POST `/api/pricing/rules` — UNIQUE (provider, model, tier) upsert.
+  - GET/POST `/api/policy/budgets` — UNIQUE (scope, scope_key, metric_key) upsert.
+  - GET `/api/policy/violations?limit=`.
+
+### Wiring (routes.go)
+
+- 7 routes baru: mesh/stack/overview + provider/chains + provider/calls + localai/models + pricing/rules + policy/budgets + policy/violations.
+
+### Verified end-to-end
+
+- Boot log: `Mesh identity: 0f5b2c14f8166877... (host=flowork)` + Migrations 100 (Section 13) + 101 (mesh stack) + 102 (LLM/pricing/policy) applied ✅.
+- /api/mesh/stack/overview → 12 table counts (mesh_identity: 4 rows from prior, mesh_peers: 1 dari Section 13 verify) ✅.
+- POST chain "default" providers=[openai,claude] → id 1, list returns ✅.
+- POST pricing haiku-default anthropic claude-haiku-4-5 $1/$5 per 1M → id 1 ✅.
+- POST budget agent/mr-flow/daily_usd=$5 → id 1 ✅.
+- POST localai qwen-7b 4.5GB → id 1 ✅.
+
+### **Router roadmap status FINAL 2026-05-30:**
+
+| Sections | Status |
+|---|---|
+| 1-12 (foundation: ingestion, importance, pii, prompt guard, quality gate, tool learner, mistakes global, skill catalog, sensors, recorder, model pool, constitution) | ✅ DONE (prior sessions) |
+| 13 (mesh foundation: identity + peer registry + INVARIANT 2 + 5 endpoint) | ✅ DONE phase 1 |
+| 14-23 (mesh stack: transport, gossip, CRDT, knowledge, toolshare, karma, filter, LoRA, L3, daemon) | ✅ DONE phase 1 schema only |
+| 24 (LLM provider abstraction) | ✅ DONE phase 1 chains+log endpoint |
+| 25 (LocalAI runtime) | ✅ DONE phase 1 model registry |
+| 26 (pricing engine extension) | ✅ DONE phase 1 pricing_rules |
+| 27 (policy + budget) | ✅ DONE phase 1 policy_budgets + violations |
+
+**Router: 27/27 closed dengan phase 1 implementations.** Mesh stack realistik defer ke phase 2 saat multi-host setup.
+
+### Defer phase 2 (consolidated):
+
+- **Mesh runtime logic** (14-23): real transport, gossip BFT, CRDT merge, knowledge promote, tool broadcast, karma EMA, 9-layer filter, LoRA chunked sync, L3 fallback, standalone daemon binary.
+- **Section 24**: provider chain orchestrator runtime (Chat/Stream/Embed interface + fallback chain primary→backup1→backup2), 13 file dari referensifile (brain_provider, bridge, call_log, chain_mode, fallback, http, kernel_proxy, local_llama, ollama, openai, openai_stream).
+- **Section 25**: llama.cpp runtime (start/stop/health), GGUF loader dengan checksum verify, manifest signature ed25519, registry metadata extract.
+- **Section 26**: per-tier dynamic resolve di chat handler middleware (real-time cost calc), bulk import OpenRouter API, owner override audit.
+- **Section 27**: cron evaluator (SUM provider_call_log per scope vs budget → INSERT violations + Telegram + action enforcement), block at request-time middleware, reset period auto-rollover.
+
+---
+
 ## 2026-05-30 16:00 WIB — Section 13: Mesh foundation (phase 1 identity + peer registry) DONE + LOCK
 
 Router sekarang punya ed25519 self-identity + peer registry sebagai bekal mesh (Section 14-23 lanjut over time). Phase 1 single-owner — no actual mDNS goroutine, peer upsert via admin endpoint.
