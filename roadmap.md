@@ -282,7 +282,7 @@ CREATE TABLE IF NOT EXISTS mistakes_journal (
 
 ---
 
-## Section 11 — Model pool (multi-model registry + refresh + resolver)
+## Section 11 — Model pool (multi-model registry + refresh + resolver) ✅ DONE (phase 1 — CRUD only) 2026-05-30
 
 **Goal:** maintain catalog model dengan cost, context_window, status. Refresh otomatis dari provider API (OpenRouter, OpenAI, Anthropic). Resolver pick model best-fit untuk request berdasar criteria (cost, quality, context size).
 

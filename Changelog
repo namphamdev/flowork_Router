@@ -4,6 +4,42 @@
 
 ---
 
+## 2026-05-30 11:40 WIB — Section 11: Model pool (phase 1 CRUD) DONE + LOCK
+
+- **feat(modelpool)**: `internal/modelpool/modelpool.go` (LOCKED) — adapted ke EXISTING schema `model_pool` (kolom: model_id/model_name/category/context_window/cost_prompt/cost_completion/is_free/created_at; NO deleted_at). API: `Upsert` (idempotent by model_id UNIQUE), `Get` (return zero+id on miss — caller bedakan via ModelName==""), `List(opts)` filter category/is_free/max_cost ordered cheap-first (cost_prompt ASC, model_id ASC), `Delete` DESTRUCTIVE physical remove, `Count`. Hard cap model_id/model_name 256 char.
+- **feat(handlers)**: `handlers_brain_models.go` (LOCKED) — namespace **/api/brain/models** (NOT /api/models — avoid collision dengan existing handlers_models_meta.go yang serve flowork-settings store).
+  - POST upsert (body: UpsertOpts)
+  - GET list (?category=&is_free=1&max_cost=&limit=)
+  - GET /get?id= single
+  - DELETE ?id= physical remove
+- **verified end-to-end via 10 scenario**:
+  - Upsert claude-haiku → id=1 added
+  - Re-upsert same → id=1 not_added, model_name updated
+  - Upsert llama free → id=2 added
+  - Upsert gpt-4o pricier → id=3 added
+  - List cheap-first ordering verified (llama free → haiku 1 → gpt-4o 2.5)
+  - Filter is_free=1 → only llama
+  - Filter max_cost=2 → only llama (haiku.cost_completion=5 > 2 blocked)
+  - Get single returns full row
+  - DELETE llama → deleted=1
+  - Missing required → 400
+
+### Phase 1 scope (DONE):
+- CRUD via /api/brain/models namespace, leverage existing schema.
+
+### Section 11 history (kemarin rolled back):
+- 2026-05-29 22:50 WIB attempt: bikin schema baru dengan kolom provider/display_name/cost_input_per_1m_usd/last_seen_at. Conflict dengan existing schema yg pre-populated → rolled back clean.
+- Today (2026-05-30) adapted approach: pakai existing schema kolom + namespace berbeda `/api/brain/models` supaya ngga conflict dengan existing handler.
+
+### Defer phase 2/3:
+- **`model_refresh.go`** periodic refresh dari provider API (OpenRouter/OpenAI/Anthropic catalog sync)
+- **`model_resolver.go`** pick best-fit (cost-quality-context criteria)
+- **`last_seen_at` column** — extend existing schema kalau perlu sync timestamps
+- **Cron refresh weekly** — wire kernel pattern mirror StartRetentionCron
+- **Anti-DELETE soft-delete** — add `deleted_at` column phase 2
+
+---
+
 ## 2026-05-29 22:35 WIB — Section 10: Recorder (phase 1 — recorder subset) DONE + LOCK
 
 - **feat(recorder)**: `internal/recorder/recorder.go` (LOCKED) — reuse EXISTING `recordings` table schema di brain DB (BUKAN bikin baru). Mapping RecordOpts → schema columns: Model/RequestBody (JSON marshal → prompt)/ResponseText/InputTokens/OutputTokens/CostUSD/BuildPass (-1 not_eval, 0 fail, 1 pass)/ToolCalls (JSON marshal)/Agent. Auto-derive `prompt_hash` SHA-256 first 16 char. Hard cap 32KB prompt + response.
