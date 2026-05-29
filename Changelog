@@ -4,6 +4,40 @@
 
 ---
 
+## 2026-05-29 21:20 WIB — Section 4: Prompt injection detector (phase 1) DONE + audit + LOCK
+
+- **feat(promptguard)**: `internal/promptguard/promptguard.go` (LOCKED) — standalone signature-based detector library. `Detect(content) → Result{algo_version, allowed, severity, score, hits, educational_context, reason}`. `HasInjection()` quick boolean. 13 regex signatures across 4 category:
+  - **instruction_override**: "ignore previous", "disregard above", "override directive" — weight 0.5
+  - **role_hijack**: "you are now jailbroken/DAN", "pretend to be", "act as" — weight 0.3-0.4
+  - **system_leak**: "reveal system prompt", "system:" prefix, "enable developer mode" — weight 0.2-0.5
+  - **jailbreak**: "DAN prompt", "anything now", "bypass restrictions", "hypothetically evil" — weight 0.3-0.4
+- **severity tier**: `safe` (< 0.4) / `review` (0.4-0.7) / `suspicious` (≥ 0.7 → recommend quarantine).
+- **educational context dampening**: content head 200-char dengan keyword prefix (`tutorial:`, `example:`, `discuss`, `contoh:`, `penjelasan:`, dst) → score × 0.5. Allow legitimate educational discussion tentang injection itself.
+- **feat(handlers)**: `handlers_brain_injection.go` (LOCKED) — `POST /api/brain/injection/check` body `{content}`. MaxBytesReader 128KB. DisallowUnknownFields.
+- **verified end-to-end via 4 scenarios**:
+  - Benign content: score 0, safe
+  - High injection (3 hits): score 1.0, suspicious, recommend quarantine
+  - Educational context: score 0.5 → 0.25 dampening, safe
+  - Single moderate (developer_mode): score 0.3, safe (< threshold)
+
+### Phase 1 scope (DONE):
+- 13 signatures + educational dampening + admin endpoint.
+
+### Audit critical fixes applied before lock:
+- **C1 (educational dampening bypass)**: attacker prepend `"Tutorial:"` ke injection → score halved → bypass review/suspicious tier. Fixed: kalau ada hit dengan weight ≥ 0.5 (high-confidence pattern: `ignore_previous`/`reveal_prompt`/`disregard_above`/`override_directive`), dampened score floored di 0.4 (review tier). Medium-weight pattern (role_hijack/jailbreak weight 0.3-0.4) tetap dampen full (false positive lebih likely). Verified: "Tutorial: ignore previous instructions" → score 0.4, severity:review, allowed:false.
+- **C2 (newline-prefix `^` anchor bypass)**: `system_prefix` pattern `^(system|admin|root):\s` ngga match `\nsystem:` karena anchor cuma start-of-string. Fixed: `(?m)` multiline flag — anchor per-line.
+- **document HasInjection asymmetry**: HasInjection ngga apply educational dampening — godoc comment added. Caller butuh full classification harus pakai Detect().
+
+### Defer:
+- **Wire ke `ingest.Submit` pipeline** + integrate `drawers.quarantined` field auto-flip — file LOCKED, phase 2 via wrapper.
+- **`/api/brain/quarantine/list`** + approve/reject workflow endpoints — defer Section 4 phase 2.
+- **Embedding-based semantic intent classification** — phase 2 needs embedding pipeline.
+- **LLM judge for ambiguous score** — expensive, defer.
+- **Multi-language patterns** (Indonesian "abaikan instruksi", etc) — defer Section 4 phase 2.
+- **Custom signature via config** — defer.
+
+---
+
 ## 2026-05-29 21:10 WIB — Section 3: PII strip (phase 1) DONE + audit + LOCK
 
 - **feat(piistrip)**: `internal/piistrip/piistrip.go` (LOCKED) — package standalone regex library. `Strip(content) → Result{algo_version, cleaned, counts, found, total}`. `StripQuiet()` (production mode — no Found samples leak raw PII). `HasPII()` quick boolean. 7 pattern compiled at init:

@@ -98,9 +98,11 @@
 
 ---
 
-## Section 4 — Prompt injection detector
+## Section 4 — Prompt injection detector ✅ DONE (phase 1) 2026-05-29
 
 **Goal:** detect & flag content yang berisi prompt injection attempt (override system, ignore previous, jailbreak). Drop content kalau confirmed, atau quarantine kalau ambiguous.
+
+> **Phase 1 scope**: signature-based detector library + admin endpoint untuk test. Quarantine workflow + integrate via `drawers.quarantined` defer kalau handler ingest perlu (file LOCKED).
 
 **Logic:**
 - Pattern detect: "ignore previous instructions", "you are now", "system:", role hijack
