@@ -4,6 +4,41 @@
 
 ---
 
+## 2026-05-29 21:10 WIB — Section 3: PII strip (phase 1) DONE + audit + LOCK
+
+- **feat(piistrip)**: `internal/piistrip/piistrip.go` (LOCKED) — package standalone regex library. `Strip(content) → Result{algo_version, cleaned, counts, found, total}`. `StripQuiet()` (production mode — no Found samples leak raw PII). `HasPII()` quick boolean. 7 pattern compiled at init:
+  - URL (`https?://...`)
+  - Email (RFC-ish)
+  - Phone Indonesia (`+62|62|0` + 8xx + 8-11 digit)
+  - Phone international (`+` + 7-15 digit)
+  - NIK Indonesia (16 digit contiguous)
+  - Credit card (12-19 digit, allow space/dash group)
+  - IPv4 (4-octet dotted)
+- **feat(handlers)**: `handlers_brain_pii.go` (LOCKED) — `POST /api/brain/pii/strip` body `{content, quiet?}`. `quiet=true` → omit Found samples. MaxBytesReader 256KB. DisallowUnknownFields anti-typo.
+- **pattern order fix (smoke)**: `+6281999888777` originally claimed sebagai credit_card. Reordered: Phone-ID + Phone-Intl SEBELUM CC + NIK.
+- **audit critical fix C1 (CC vs NIK split)**: 16-digit no-dash CC ke-label nik_id (audit log mislabel). Fixed: split CC jadi 2 pattern strategy — formatted CC `\d{4}[ -]\d{4}[ -]\d{4}[ -]\d{4}` di-detect dulu, lalu NIK 16-digit no-sep. Real CC (typed dengan dash) → credit_card; real NIK (no dash) → nik_id.
+- **audit critical fix C2 (broad CC scrapped)**: pattern `\b(?:\d[ -]?){12,18}\d\b` swept invoice numbers, tracking IDs, dst. Dropped — only formatted CC pattern remain. Plain 13-19 digit CC tanpa dash defer phase 2 (perlu Luhn check untuk reduce false positive).
+- **audit critical fix C3 (+ prefix include)**: `\b(?:\+62|...)` di phone pattern miss `+` karena word-boundary regex quirk. Dropped leading `\b` — `+6281999888777` sekarang fully redacted (no leftover `+`).
+- **audit important fix I1 (URL trailing punct)**: revert URL regex to permissive, add `trimTrailingPunct()` post-match trim `.,;:!?` via `ReplaceAllStringFunc`. URL path-with-period (`.git`, `.html`) intact, sentence-ending punctuation preserved as plain text.
+- **N3 cleanup**: removed unused `strings.Builder{}` placeholder import.
+- **verified end-to-end**:
+  - Multi-PII content (email + 2 phone + URL + NIK + CC + IP): 7 strips, all correct type
+  - Clean content: 0 strips
+  - Quiet mode: no Found samples leak
+
+### Phase 1 scope (DONE):
+- 7 regex pattern + Strip/StripQuiet/HasPII API + admin endpoint.
+
+### Defer:
+- **Wire ke `ingest.Submit` pipeline**: file LOCKED. Caller invoke piistrip.StripQuiet sebelum pass ke ingest. Future phase 2: wrapper `SubmitWithSanitize()`.
+- **Audit log endpoint `GET /api/brain/pii/audit`**: butuh `pii_audit` table — schema belum ada. Defer Section 3 phase 2.
+- **Luhn check credit card**: reduce false positive — defer.
+- **Context-aware preserve (URL inside quote)**: defer.
+- **Custom corp pattern via config**: defer.
+- **Cosmetic `+` leftover di phone-intl strip**: `\b` word boundary regex quirk. Acceptable phase 1.
+
+---
+
 ## 2026-05-29 21:00 WIB — Section 5: Quality gate (phase 1) DONE + audit + LOCK
 
 - **feat(quality)**: `internal/quality/quality.go` (LOCKED) — package standalone heuristic library. `Check(content) → Result{Allowed, Reason, Score, sub-scores}`. 4 heuristic check:

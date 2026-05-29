@@ -79,7 +79,7 @@
 
 ---
 
-## Section 3 — PII strip (sanitize sebelum simpan)
+## Section 3 — PII strip (sanitize sebelum simpan) ✅ DONE (phase 1) 2026-05-29
 
 **Goal:** strip email, phone, credit card, NIK, dst sebelum content masuk drawer. Critical buat privacy + compliance.
 
