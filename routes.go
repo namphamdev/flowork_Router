@@ -236,4 +236,11 @@ func registerAuthRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/oauth/imports", oauthImportsHandler)
 	mux.HandleFunc("/api/oauth", oauthRouterHandler)
 	mux.HandleFunc("/api/oauth/", oauthRouterHandler)
+
+	// Section 13 mesh foundation (phase 1: identity + peer registry).
+	mux.HandleFunc("/api/mesh/identity", meshIdentityHandler)
+	mux.HandleFunc("/api/mesh/peers", meshPeersHandler)
+	mux.HandleFunc("/api/mesh/discover", meshDiscoverHandler)
+	mux.HandleFunc("/api/mesh/peer", meshUpsertPeerHandler)
+	mux.HandleFunc("/api/mesh/peer/block", meshBlockHandler)
 }

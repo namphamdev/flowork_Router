@@ -434,7 +434,7 @@ Section yang punya counterpart di agent (harus dikerjain berbarengan supaya endp
 
 ---
 
-## Section 13 — Mesh foundation (discovery + identity + bootstrap)
+## Section 13 — Mesh foundation (discovery + identity + bootstrap) ✅ DONE 2026-05-30 phase 1 (ed25519 identity bootstrap + peer registry + INVARIANT 2 blocklist + 5 admin endpoints. Phase 2+: mDNS multicast goroutine, DNS seed bootstrap, identity handshake)
 
 **Goal:** kerangka mesh — generate peer identity (ed25519), discover peer di LAN via mDNS, DNS_seed bootstrap untuk cross-network, blocklist cloud metadata IP.
 

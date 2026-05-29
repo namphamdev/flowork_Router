@@ -4,6 +4,42 @@
 
 ---
 
+## 2026-05-30 16:00 WIB — Section 13: Mesh foundation (phase 1 identity + peer registry) DONE + LOCK
+
+Router sekarang punya ed25519 self-identity + peer registry sebagai bekal mesh (Section 14-23 lanjut over time). Phase 1 single-owner — no actual mDNS goroutine, peer upsert via admin endpoint.
+
+- **feat(internal/mesh/identity.go)** (NEW LOCKED): `EnsureIdentity(db, version)` boot-time idempotent — generate ed25519 keypair kalau `mesh_identity` kosong, simpan pubkey_hex + privkey_hex + hostname + version. `LoadIdentity(db)` read-only baca tanpa side-effect. `Identity.PrivKeyHex` di-tag `json:"-"` anti-leak.
+- **feat(internal/mesh/peers.go)** (NEW LOCKED): peer registry CRUD. `UpsertPeer` reject IP/host yang ada di cloud metadata blocklist (INVARIANT 2). `ListPeers(includeBlocked)` order by last_seen DESC. `SetBlocked` toggle block. `Touch` update last_seen. `CountPeers`.
+- **feat(internal/mesh/blocklist.go)** (NEW LOCKED): INVARIANT 2 — block 169.254.0.0/16 + cloud metadata IPs (AWS/GCP/Azure 169.254.169.254, Alibaba 100.100.100.200, legacy 192.0.0.192) + metadata hostnames.
+- **feat(internal/store/mesh_migrations.go)** (NEW LOCKED): migration ID 100 `section13_mesh_foundation` — mesh_identity (WITHOUT ROWID kv) + mesh_peers (PK pubkey_hex + trust_score REAL DEFAULT 0.5 + idx lastseen + idx blocked).
+- **feat(handlers_mesh.go)** (NEW LOCKED): 5 endpoints:
+  - `GET  /api/mesh/identity` — pubkey + hostname + peer_count
+  - `GET  /api/mesh/peers?include_blocked=` — list peers ORDER BY last_seen DESC
+  - `POST /api/mesh/discover` — phase 1 stub (returns ok+message)
+  - `POST /api/mesh/peer` — admin upsert (body Peer JSON)
+  - `POST /api/mesh/peer/block?pubkey=&blocked=` — toggle block
+- **wiring(main.go)**: import mesh + panggil `mesh.EnsureIdentity(d, version)` setelah PurgeExpiredSessions. Log `Mesh identity: <16-char-pubkey>... (host=<hostname>)`.
+- **wiring(routes.go)**: register 5 handler di `registerRoutes`.
+
+### Verified end-to-end (smoke test 5 endpoint):
+
+- Boot log: `Mesh identity: 0f5b2c14f8166877... (host=flowork)` — first-boot generate, second-boot reuse same key.
+- `/api/mesh/identity` → 200 with pubkey + hostname + peer_count=0
+- `/api/mesh/peers` → 200 `{"count":0,"peers":[]}`
+- `/api/mesh/discover` POST → 200 with phase 1 stub message
+- `/api/mesh/peer` POST `{pubkey_hex:"abcd1234", ip:"192.168.1.50",...}` → 200 ok
+- **INVARIANT 2 enforced**: POST with `ip:"169.254.169.254"` → `mesh: blocked cloud metadata IP "169.254.169.254"` rejected.
+- After upsert: `/api/mesh/peers` returns 1 peer dengan trust_score=0.5 default, blocked=false.
+
+### Defer phase 2+:
+- **mDNS multicast announce + listen** (referensifile/section_13/discovery.go — pure Go UDP multicast pattern siap port).
+- **DNS seed bootstrap** (cross-LAN peer discovery).
+- **identity_handshake** — actual handshake protocol tukar pubkey, validate signature.
+- **identity_extended** — license metadata, hardware fingerprint.
+- **seed_gist** — bootstrap via GitHub Gist fallback.
+
+---
+
 ## 2026-05-30 11:55 WIB — Section 12: Discipline constitution (phase 1 propose+vote) DONE + LOCK
 
 - **feat(constitution)**: `internal/constitution/proposals.go` (LOCKED) — propose+vote workflow library. Leverage EXISTING `constitution` table dengan `pending_quorum_review` column + auto-trigger `trg_constitution_log_update` (history archive). API: `Propose` (INSERT pending=1, UNIQUE source_file+section anti-dup, content 16KB cap), `ListPending` (cap 500, summary/include_content toggle), `Vote{approve|reject}` idempotent (re-vote returns no-op kalau already settled), `CountPending`. Single-owner phase 1: VoterID free-form via header `X-Voter-ID`.

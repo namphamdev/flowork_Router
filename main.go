@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/flowork-os/flowork_Router/internal/mesh"
 	"github.com/flowork-os/flowork_Router/internal/store"
 
 	// Side-effect import: each filter's init() registers itself with rtk.
@@ -61,6 +62,17 @@ func main() {
 	}
 	if err := store.PurgeExpiredSessions(d); err != nil {
 		log.Printf("WARN: purge sessions: %v", err)
+	}
+	// Section 13 mesh foundation: generate ed25519 identity kalau belum
+	// ada, simpan di mesh_identity. Idempotent — call tiap boot OK.
+	if id, err := mesh.EnsureIdentity(d, version); err != nil {
+		log.Printf("WARN: mesh identity: %v", err)
+	} else {
+		shortKey := id.PubKeyHex
+		if len(shortKey) > 16 {
+			shortKey = shortKey[:16]
+		}
+		log.Printf("Mesh identity: %s... (host=%s)", shortKey, id.Hostname)
 	}
 	loadMITMCaptureState()
 	startTunnelWatchdog()
