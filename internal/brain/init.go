@@ -174,6 +174,9 @@ CREATE INDEX IF NOT EXISTS idx_mistakes_journal_tier      ON mistakes_journal(ti
 CREATE INDEX IF NOT EXISTS idx_mistakes_journal_source    ON mistakes_journal(source_agent_id);
 CREATE INDEX IF NOT EXISTS idx_mistakes_journal_deleted   ON mistakes_journal(deleted_at);
 CREATE INDEX IF NOT EXISTS idx_mistakes_journal_updated   ON mistakes_journal(updated_at DESC);
+
+-- Section 10 — Recorder (existing schema in brain reused, NO new table).
+-- See internal/recorder/recorder.go for column mapping.
 `
 
 // EnsureSchema bootstraps a Memory Palace DB at the resolved path if absent,

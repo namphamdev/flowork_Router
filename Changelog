@@ -4,6 +4,33 @@
 
 ---
 
+## 2026-05-29 22:35 WIB — Section 10: Recorder (phase 1 — recorder subset) DONE + LOCK
+
+- **feat(recorder)**: `internal/recorder/recorder.go` (LOCKED) — reuse EXISTING `recordings` table schema di brain DB (BUKAN bikin baru). Mapping RecordOpts → schema columns: Model/RequestBody (JSON marshal → prompt)/ResponseText/InputTokens/OutputTokens/CostUSD/BuildPass (-1 not_eval, 0 fail, 1 pass)/ToolCalls (JSON marshal)/Agent. Auto-derive `prompt_hash` SHA-256 first 16 char. Hard cap 32KB prompt + response.
+- **feat(handlers)**: `handlers_recordings.go` (LOCKED) — `POST /api/recordings` admin manual insert. `GET /api/recordings?model=&agent=&limit=&include_body=1` — list summary (default no body) or full. `GET /api/recordings/get?id=` single with body. MaxBytesReader 128KB.
+- **verified end-to-end via 7 scenario**:
+  - POST recording (claude-haiku, build_pass=1, mr-flow agent) → id=1
+  - POST another (gpt-4, build_pass=0 fail) → id=2
+  - GET list summary: 2 rows, no prompt/response body
+  - Filter agent=mr-flow: 2 rows
+  - GET single with body: prompt_hash, prompt JSON, response, tokens, cost, build_pass returned
+  - Not found: 404
+  - Missing model: rejected
+- **adapter note**: initial implementation tried add new `recordings` table dengan kolom provider/status/latency_ms — failed karena tabel SUDAH ada di brain DB dengan schema beda (prompt_hash/prompt/response/cost_usd/build_pass/tool_calls/agent). Reverted to adapt code ke existing schema. Init.go: added comment line only.
+
+### Phase 1 scope (DONE):
+- Recorder library + admin endpoint, reuse existing schema.
+
+### Defer phase 2/3:
+- **router_rules.go**: rule engine (request match X → model Y) — touching existing chat handlers
+- **proxy.go**: outbound proxy + retry + circuit breaker
+- **build_verifier.go**: response format verify
+- **Wire middleware ke `/v1/chat/completions`** — currently caller invoke explicit Save()
+- **Training data export** (JSONL filter status=pass)
+- **Cost analytics** (sum cost_usd per model/agent per day)
+
+---
+
 ## 2026-05-29 22:25 WIB — Section 9: Sensors webhook (phase 1) DONE + LOCK
 
 - **feat(sensors)**: `internal/sensors/sensors.go` (LOCKED) — webhook auth library. `ValidateSource(id)` strict regex `^[a-zA-Z0-9][a-zA-Z0-9-]{1,31}$` + env lookup pattern `FLOW_ROUTER_SENSOR_<UPPER_ID>_TOKEN`. `CompareToken` constant-time via `crypto/subtle.ConstantTimeCompare` anti timing attack. `AuthSource` combined. Sentinel errors: `ErrUnknownSource`, `ErrInvalidToken`, `ErrInvalidSourceID`.

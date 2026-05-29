@@ -255,9 +255,12 @@ CREATE TABLE IF NOT EXISTS mistakes_journal (
 
 ---
 
-## Section 10 — Recorder + routing rules + proxy
+## Section 10 — Recorder + routing rules + proxy ✅ DONE (phase 1 — recorder only) 2026-05-29
 
 **Goal:** setiap chat-LLM interaction yang lewat router di-record (request + response + metadata) ke tabel `recordings`. Buat training data + audit. Plus routing rules: decide model mana yang dipakai berdasar request.
+
+> **Phase 1 scope (sekarang)**: schema `recordings` + library `internal/recorder/recorder.go` + admin endpoint POST record + GET list. Standalone — caller wajib explicit invoke `recorder.Record()`.
+> **Defer phase 2/3**: router_rules.go (rule engine), proxy.go (outbound proxy + retry + circuit breaker), build_verifier.go, wire middleware ke existing chat handler.
 
 **Komponen:**
 
