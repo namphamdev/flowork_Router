@@ -4,6 +4,31 @@
 
 ---
 
+## 2026-05-29 22:25 WIB — Section 9: Sensors webhook (phase 1) DONE + LOCK
+
+- **feat(sensors)**: `internal/sensors/sensors.go` (LOCKED) — webhook auth library. `ValidateSource(id)` strict regex `^[a-zA-Z0-9][a-zA-Z0-9-]{1,31}$` + env lookup pattern `FLOW_ROUTER_SENSOR_<UPPER_ID>_TOKEN`. `CompareToken` constant-time via `crypto/subtle.ConstantTimeCompare` anti timing attack. `AuthSource` combined. Sentinel errors: `ErrUnknownSource`, `ErrInvalidToken`, `ErrInvalidSourceID`.
+- **feat(handlers)**: `handlers_sensors_webhook.go` (LOCKED) — `POST /api/sensors/webhook?source=<id>` header `X-Sensor-Token`. MaxBytesReader 256KB. Body raw content (UTF-8) → `ingest.Submit` dengan `wing='webhook'`, `room=<source_id>`, `source_type='webhook'`. Pipe ke existing locked ingest pipeline.
+- **verified end-to-end via 6 scenario**:
+  - Unknown source (env not set): 401 "unknown sensor source"
+  - Missing X-Sensor-Token header: 401
+  - Wrong token: 401 "invalid sensor token" (constant-time compare)
+  - Valid token + body: drawer added (id=`39957870f56c8e03`)
+  - Empty body: 400
+  - Invalid source ID format (e.g. "BAD!"): 400
+  - DB verify: drawer wing=webhook, room=testbot, source_type=webhook ✓
+
+### Phase 1 scope (DONE):
+- Webhook receiver only, env-based registry, ingest pipeline integration.
+
+### Defer phase 2:
+- **File watcher** (fsnotify on `~/.flowork-router/drop/`) — drop file auto-ingest
+- **Scheduler** (cron URL fetch periodic)
+- **Multi-source registry persisted di settings DB** (currently env-only)
+- **Per-source rate limit** (anti-spam)
+- **Webhook structured payload** (JSON dengan title/category/metadata, currently raw body only)
+
+---
+
 ## 2026-05-29 22:15 WIB — Section 6: Tool learner (phase 1) DONE + LOCK
 
 - **feat(brain)**: `internal/brain/tool_patterns.go` (LOCKED) — leverage existing schema `tool_patterns(trigger_pattern, tool_name, success_count, fail_count, amplitude)`. `LearnPattern(trigger, tool, success)` atomic UPSERT via ON CONFLICT DO UPDATE dengan amplitude recomputed di SQL level (formula `success / (success+fail)`). `SuggestTools(trigger, limit)` substring LIKE match + rank by amplitude DESC + success_count DESC tiebreaker. `CountToolPatterns` helper. Cap 10 anti over-prompt.

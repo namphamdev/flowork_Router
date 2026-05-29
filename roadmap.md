@@ -236,7 +236,7 @@ CREATE TABLE IF NOT EXISTS mistakes_journal (
 
 ---
 
-## Section 9 — Sensors (input layer)
+## Section 9 — Sensors (input layer) ✅ DONE (phase 1) 2026-05-29
 
 **Goal:** ingest dari sumber lain selain HTTP submit — file watch (drop file ke folder, auto-ingest), webhook (forward dari external), schedule (periodic refresh dari URL).
 
