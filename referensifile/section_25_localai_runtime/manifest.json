@@ -1,0 +1,6 @@
+{
+  "version": "0.1.0-rc143",
+  "updated_at": "2026-04-20T18:00:00Z",
+  "notes": "Manifest untuk flowork-bin pull. URL + SHA256 hardcoded = integrity-by-commit (diff audit-able di git history). Tambah entri baru: append + bump updated_at + commit. Pending Ed25519 signature per Gemini rc120 spec — defer sampai Sprint 4 BFT keygen tie-in.",
+  "artifacts": []
+}

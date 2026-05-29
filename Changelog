@@ -1,5 +1,47 @@
 # Changelog
 
+> Format dating-style mulai 2026-05-29 untuk align dengan `Flowork_Agent/CHANGELOG.md`. Section "1.0.0 — Initial public release" di bawah = baseline pre-roadmap-execution.
+
+---
+
+## 2026-05-29 20:00 WIB — Section 1: Adversarial audit + hardening + LOCK
+
+- **fix(atomicity)**: `internal/brain/write.go::AddDrawerFull` wrap drawer+FTS insert dalam `db.BeginTx` (sebelumnya: 2 separate Exec — kalau FTS gagal setelah drawer commit, drawer ada tapi tidak searchable → silent inconsistency).
+- **fix(dos/memory)**: `handlers_brain_ingest.go` apply `http.MaxBytesReader(w, r.Body, 16MB)` di submit + batch (sebelumnya: caller bisa POST 100MB body → OOM, cap batch jalan SETELAH parse).
+- **fix(dos/cpu)**: `internal/ingest/sanitize.go::Sanitize` cap input ke `MaxSanitizeBytes = 256KB` di awal (sebelumnya: loop ReplaceAll O(n²) untuk input pathological whitespace).
+- **lock**: 4 file Section 1 di-mark LOCKED — `internal/ingest/{ingest,sanitize,score}.go` + `handlers_brain_ingest.go`. Section 2 (Re-score worker), Section 4 (compounding worker), Section 5 (embedding pipeline) → TAMBAH function/file baru, JANGAN modify locked file tanpa approval Mr.Dev.
+
+### Audit deferred items (tidak fix sekarang — alasan eksplisit):
+- **Error message generic prefix** (`fmt.Errorf("insert drawer: %w", err)` bisa expose SQLite column/constraint detail ke HTTP body): single-owner deployment, debug-value > leak-risk. Defer sampai multi-tenant.
+- **Embedding generation**: roadmap acknowledge defer ke Section 5 (Embed worker). Saat ini FTS BM25 cukup untuk dedupe + basic retrieval.
+- **Doc chunker** (`ChunkIndex` param exists, helper `ChunkDoc(text)` tidak ada): caller harus chunk sendiri lalu batch. Defer sampai ada doc importer real.
+- **Backpressure SubmitBatch worker pool**: serial loop OK untuk single writer SQLite. Defer sampai concurrent writer atau distributed.
+- **Federation source endpoint** (`source_type='federation'` taxonomy declared, tidak ada dedicated endpoint): caller pakai /submit dengan `source_type:"federation"` cukup. Dedicated endpoint defer ke Section 17 (Knowledge share / mesh).
+
+---
+
+## 2026-05-29 19:55 WIB — Section 1: Ingestion pipeline DONE
+
+- **feat(brain)**: `AddDrawerFull(ctx, AddDrawerOpts)` di `internal/brain/write.go` — sibling `AddDrawer`, full param control (source_type, source_file, importance, chunk_index, mem_type, normalize_version, wing, room). Dedupe content_hash + sync ke `memory_fts` sama kaya AddDrawer. AddDrawer existing tetap untuk stub `/run`.
+- **feat(ingest)**: package baru `internal/ingest/` — orchestrator `Submit()` + `SubmitBatch()` (anti short-circuit on error). `Sanitize()` normalize line ending + strip control char + collapse whitespace. `Score()` heuristic 0-10 (signal words, source reputation, length). Quality gate `minContentChars=20`.
+- **feat(handlers)**: `handlers_brain_ingest.go` — `POST /api/brain/ingest/submit` (single) + `POST /api/brain/ingest/batch` (max 1000 items). Helper `ensureBrainReady()`. Existing `/run` stub tidak di-modify.
+- **fix(build)**: `referensifile/go.mod` separate module — cegah `go build ./...` parent scan 101 .go reference file dengan external imports (same fix as Agent repo).
+- **verified end-to-end** dengan 3 test:
+  - submit single → drawer_id `df94ac62fc1679fd`, `added: true`
+  - resubmit same content → `added: false` (dedupe kerja)
+  - batch 3 items → `{total:3, added:1, deduped:1, skipped:1, failed:0}` (1 dup, 1 short, 1 valid)
+  - Importance heuristic verified: default-scored `5.0` (manual+length boost), caller override `7.0` passed through.
+
+### NOT included (defer ke section berikutnya per scope):
+- Embedding generation (Section 5 — Embed worker)
+- Re-score job berkala (Section 2 — Importance scorer refine)
+- Backpressure rate-limit per source (Section 1 nice-to-have, ditunda sampai ada use case real)
+- Doc-specific chunking strategy (ingest_docs.go) — saat ini caller harus chunk sendiri lalu pakai batch endpoint. Helper chunker ditunda sampai ada importer real.
+
+---
+
+---
+
 ## 1.0.0 — Initial public release
 
 Multi-provider AI gateway in Go. Highlights:

@@ -151,6 +151,101 @@ func AddDrawer(ctx context.Context, content, wing, room, memType string) (string
 	return id, true, nil
 }
 
+// AddDrawerOpts — full param control untuk pipeline ingest (section 1
+// roadmap). Pakai ini kalau caller butuh set source_type, source_file,
+// importance, chunk_index, atau normalize_version explicit. Untuk caller
+// simple-compounding (mis. /api/brain/ingest/run stub) pakai AddDrawer.
+type AddDrawerOpts struct {
+	Content          string  // wajib
+	Wing             string  // default "compounding"
+	Room             string  // free-form room/section
+	SourceType       string  // 'manual' | 'chat' | 'doc' | 'federation' | 'compounding'
+	SourceFile       string  // path/identifier asal (kosong = inline)
+	MemType          string  // default "compounding" (project|antibody|fact|skill...)
+	Importance       float64 // 0-10 scale; <= 0 → keep DB default (3.0)
+	ChunkIndex       int     // 0 = atomic; > 0 = chunk N dari doc panjang
+	NormalizeVersion int     // 0 → keep DB default (1)
+}
+
+// AddDrawerFull adalah versi extended dari AddDrawer dengan kontrol penuh
+// atas semua kolom drawer. Dedupe content_hash + sync ke memory_fts sama
+// kaya AddDrawer — caller tetap dapet drawer ID + flag `added` (false kalau
+// content sudah ada di brain).
+//
+// Source: roadmap.md Section 1 (Ingestion pipeline).
+func AddDrawerFull(ctx context.Context, opts AddDrawerOpts) (string, bool, error) {
+	content := trimSpace(opts.Content)
+	if content == "" {
+		return "", false, fmt.Errorf("empty content")
+	}
+	wing := opts.Wing
+	if wing == "" {
+		wing = "compounding"
+	}
+	sourceType := opts.SourceType
+	if sourceType == "" {
+		sourceType = "manual"
+	}
+	memType := opts.MemType
+	if memType == "" {
+		memType = "compounding"
+	}
+	importance := opts.Importance
+	if importance <= 0 {
+		importance = 3.0
+	}
+	normalizeVer := opts.NormalizeVersion
+	if normalizeVer <= 0 {
+		normalizeVer = 1
+	}
+
+	sum := sha256.Sum256([]byte(content))
+	hash := hex.EncodeToString(sum[:])
+	id := hash[:16]
+
+	db, err := OpenRW()
+	if err != nil {
+		return "", false, err
+	}
+	// Dedup by content_hash. Kalau live drawer udah punya hash sama → return
+	// ID existing-nya (idempotent).
+	var exists string
+	if err := db.QueryRowContext(ctx, `SELECT id FROM drawers WHERE content_hash = ? AND deleted_at IS NULL LIMIT 1`, hash).Scan(&exists); err == nil {
+		return exists, false, nil
+	}
+
+	// Drawer + FTS insert atomic dalam satu transaction. Tanpa ini, kalau FTS
+	// insert gagal setelah drawer commit, drawer ada di DB tapi ngga
+	// searchable → silent inconsistency.
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return "", false, fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() {
+		if tx != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	if _, err := tx.ExecContext(ctx, `INSERT OR IGNORE INTO drawers
+		(id, content, wing, room, source_file, source_type, chunk_index, importance, normalize_version, content_hash, mem_type)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		id, content, wing, opts.Room, opts.SourceFile, sourceType, opts.ChunkIndex,
+		importance, normalizeVer, hash, memType,
+	); err != nil {
+		return "", false, fmt.Errorf("insert drawer: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, `INSERT INTO memory_fts (drawer_id, content, wing, room, source_file)
+		VALUES (?, ?, ?, ?, ?)`, id, content, wing, opts.Room, opts.SourceFile); err != nil {
+		return "", false, fmt.Errorf("insert fts: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return "", false, fmt.Errorf("commit tx: %w", err)
+	}
+	tx = nil // skip rollback di defer setelah commit sukses
+	return id, true, nil
+}
+
 // trimSpace — local helper (avoids importing strings just for this).
 func trimSpace(s string) string {
 	start, end := 0, len(s)
