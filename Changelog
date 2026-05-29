@@ -4,6 +4,35 @@
 
 ---
 
+## 2026-05-30 11:55 WIB — Section 12: Discipline constitution (phase 1 propose+vote) DONE + LOCK
+
+- **feat(constitution)**: `internal/constitution/proposals.go` (LOCKED) — propose+vote workflow library. Leverage EXISTING `constitution` table dengan `pending_quorum_review` column + auto-trigger `trg_constitution_log_update` (history archive). API: `Propose` (INSERT pending=1, UNIQUE source_file+section anti-dup, content 16KB cap), `ListPending` (cap 500, summary/include_content toggle), `Vote{approve|reject}` idempotent (re-vote returns no-op kalau already settled), `CountPending`. Single-owner phase 1: VoterID free-form via header `X-Voter-ID`.
+- **feat(handlers)**: `handlers_brain_proposals.go` (LOCKED) — `POST /api/brain/constitution/propose` body ProposeOpts. `GET /api/brain/constitution/proposals?include_content=1&limit=` summary or full. `POST /api/brain/constitution/vote?id=&approve=0|1` header X-Voter-ID.
+- **verified end-to-end via 10 scenario**:
+  - Propose FQP-13 (anti-halu audit rule) → id=664 pending
+  - Propose FQP-14 (lock-after-verify rule) → id=665 pending
+  - Duplicate propose (same source_file+section) → UNIQUE reject
+  - List pending summary (no content)
+  - List pending include_content (full)
+  - Approve 664 → status=approved (pending=0)
+  - Reject 665 → status=rejected (deleted_at + deleted_by='vote-rejected:mr.dev')
+  - Re-vote 664 → no-op (idempotent)
+  - Vote on missing id → 'proposal not found'
+  - Invalid approve param → 400
+  - DB state verified: 664 promoted clean (pending=0, no delete); 665 rejected (pending=1 + deleted_at + deleted_by)
+
+### Phase 1 scope (DONE):
+- Propose + List pending + Vote workflow on existing schema.
+
+### Defer phase 2/3:
+- **Brain reset endpoint** (`POST /api/brain/reset?confirm=YES_NUKE_ALL`) — DESTRUCTIVE, defer sampai ada audit log + backup workflow
+- **Multi-signer quorum auth** (current single-owner — VoterID free-form via header)
+- **Content edit via propose** (current propose=new-rule only; edit existing = update pending field + content via TRIGGER history archive)
+- **GET /api/brain/constitution/history** endpoint (data sudah ada di constitution_history via auto-trigger)
+- **Proposal expiry** (auto-reject pending > N days)
+
+---
+
 ## 2026-05-30 11:40 WIB — Section 11: Model pool (phase 1 CRUD) DONE + LOCK
 
 - **feat(modelpool)**: `internal/modelpool/modelpool.go` (LOCKED) — adapted ke EXISTING schema `model_pool` (kolom: model_id/model_name/category/context_window/cost_prompt/cost_completion/is_free/created_at; NO deleted_at). API: `Upsert` (idempotent by model_id UNIQUE), `Get` (return zero+id on miss — caller bedakan via ModelName==""), `List(opts)` filter category/is_free/max_cost ordered cheap-first (cost_prompt ASC, model_id ASC), `Delete` DESTRUCTIVE physical remove, `Count`. Hard cap model_id/model_name 256 char.

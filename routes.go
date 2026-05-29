@@ -168,6 +168,9 @@ func registerManagementRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/brain/tool-patterns", brainToolSuggestHandler)      // section 6 roadmap
 	mux.HandleFunc("/api/brain/models", brainModelsHandler)                  // section 11 roadmap
 	mux.HandleFunc("/api/brain/models/get", brainModelsGetHandler)           // section 11 roadmap
+	mux.HandleFunc("/api/brain/constitution/propose", brainProposeHandler)   // section 12 roadmap
+	mux.HandleFunc("/api/brain/constitution/proposals", brainProposalsListHandler) // section 12 roadmap
+	mux.HandleFunc("/api/brain/constitution/vote", brainVoteHandler)         // section 12 roadmap
 	mux.HandleFunc("/api/sensors/webhook", sensorsWebhookHandler)            // section 9 roadmap
 	mux.HandleFunc("/api/recordings", func(w http.ResponseWriter, r *http.Request) {
 		// route POST → post handler, GET → list handler

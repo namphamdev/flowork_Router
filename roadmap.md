@@ -309,7 +309,7 @@ CREATE TABLE IF NOT EXISTS mistakes_journal (
 
 ---
 
-## Section 12 — Discipline constitution
+## Section 12 — Discipline constitution ✅ DONE (phase 1 — propose+vote) 2026-05-30
 
 **Goal:** constitution (rules sistem) ada governance: edit harus quorum review, history preserved, integrity check. Plus brain reset utility (controlled).
 
