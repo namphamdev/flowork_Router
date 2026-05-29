@@ -4,6 +4,30 @@
 
 ---
 
+## 2026-05-29 22:15 WIB — Section 6: Tool learner (phase 1) DONE + LOCK
+
+- **feat(brain)**: `internal/brain/tool_patterns.go` (LOCKED) — leverage existing schema `tool_patterns(trigger_pattern, tool_name, success_count, fail_count, amplitude)`. `LearnPattern(trigger, tool, success)` atomic UPSERT via ON CONFLICT DO UPDATE dengan amplitude recomputed di SQL level (formula `success / (success+fail)`). `SuggestTools(trigger, limit)` substring LIKE match + rank by amplitude DESC + success_count DESC tiebreaker. `CountToolPatterns` helper. Cap 10 anti over-prompt.
+- **feat(handlers)**: `handlers_brain_tools.go` (LOCKED) — `POST /api/brain/tool-patterns/learn` body {trigger, tool_name, success} return {ok, amplitude}. `GET /api/brain/tool-patterns?trigger=&limit=` return ranked list. MaxBytesReader 16KB. DisallowUnknownFields.
+- **verified end-to-end via 7 scenario**:
+  - Learn 'cek log' → grep_logs success: amplitude=1.0
+  - Learn same combo + success: amplitude=1.0 (2 success / 2 total)
+  - Learn 'cek log' → tail_logs fail: amplitude=0.0
+  - Learn 'baca file' → read_file success: amplitude=1.0
+  - Suggest 'cek log' → 2 patterns ranked (grep_logs first amp=1.0, tail_logs second amp=0.0)
+  - Suggest 'baca' substring match → 1 pattern
+  - Missing trigger → 400
+
+### Phase 1 scope (DONE):
+- Substring pattern match + amplitude rank + admin learn/suggest endpoints.
+
+### Defer:
+- N-gram / embedding cluster pattern extraction (current substring only)
+- Decay tua hit_count (anti-staleness)
+- Integration via Section 10 recorder (auto-learn dari interaction history)
+- Per-warga personalized weights
+
+---
+
 ## 2026-05-29 22:00 WIB — Section 8: Skill catalog API (phase 1) DONE + LOCK
 
 - **feat(handlers)**: `handlers_brain_skills.go` (LOCKED) — read-only catalog API on top of existing `brain.Skills()` embedded library:

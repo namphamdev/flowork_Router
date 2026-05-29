@@ -164,6 +164,8 @@ func registerManagementRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/mistakes", brainMistakesListHandler)                // section 7 roadmap
 	mux.HandleFunc("/api/brain/skills/list", brainSkillsListHandler)         // section 8 roadmap
 	mux.HandleFunc("/api/brain/skills/get", brainSkillsGetHandler)           // section 8 roadmap
+	mux.HandleFunc("/api/brain/tool-patterns/learn", brainToolLearnHandler)  // section 6 roadmap
+	mux.HandleFunc("/api/brain/tool-patterns", brainToolSuggestHandler)      // section 6 roadmap
 	mux.HandleFunc("/api/brain/search-drawers", brainSearchDrawersHandler) // flowork-kernel-compatible RAG
 	mux.HandleFunc("/api/brain/init", brainInitHandler)                    // bootstrap empty Memory Palace DB
 	mux.HandleFunc("/api/brain/drawer", brainAddDrawerHandler)             // bring-your-own-knowledge manual add

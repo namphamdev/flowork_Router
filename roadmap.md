@@ -142,7 +142,7 @@
 
 ---
 
-## Section 6 — Tool learner (pattern extraction)
+## Section 6 — Tool learner (pattern extraction) ✅ DONE (phase 1) 2026-05-29
 
 **Goal:** dari interaction history, learn pattern `trigger → tool used → success`. Simpan di `tool_patterns` table. Bantu warga di-suggest tool pas natural language match pattern.
 
