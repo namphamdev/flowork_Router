@@ -4,6 +4,43 @@
 
 ---
 
+## 2026-05-29 21:45 WIB — Section 7: Mistakes journal global (phase 1) DONE + audit + LOCK
+
+- **feat(brain)**: tabel `mistakes_journal` di brain DB (id, category, title, content, source_agent_id, hit_count, tier='global', reviewed_at, promoted_to_antibody_id, created_at, updated_at, deleted_at) + UNIQUE(category, title) + 4 index. Schema di `internal/brain/init.go::SchemaSQL`.
+- **feat(brain)**: `internal/brain/mistakes.go` (LOCKED) — `SubmitMistake` atomic UPSERT via ON CONFLICT DO UPDATE dengan RETURNING (kills TOCTOU race), `ListMistakes(tier, source, limit)`, `CountMistakes(tier)`. Private `mistakeCategoryWhitelist` + `IsValidMistakeCategory()` + `ListMistakeCategories()` accessor (anti shared-state mutation). Validation: hit_count ∈ [3, 1_000_000], category in whitelist (logic|safety|performance|security|ux|governance), source_agent_id ≤ 128 byte, content ≤ 8KB, title ≤ 256 char.
+- **feat(handlers)**: `handlers_brain_mistakes.go` (LOCKED) — `POST /api/mistakes/submit` body {agent_id, category, title, content, hit_count} return {id, added}. `GET /api/mistakes?tier=&source=&limit=` (default 50, max 500). MaxBytesReader 32KB. DisallowUnknownFields.
+- **verified end-to-end via 7 scenario**:
+  - Schema clean, 4 index + UNIQUE
+  - Valid submit: id=1, added=true
+  - Re-submit: id=1, added=false, hit_count 5→8
+  - Invalid hit_count < 3: rejected
+  - Invalid category 'xyz': rejected
+  - List returns 1 row with tier='global'
+  - hit_count = 99999999999: rejected (cap 1M)
+  - agent_id 130 char: rejected (cap 128)
+  - Atomic UPSERT verified: fresh insert id=2 added=true, immediate re-submit id=2 added=false (no race window)
+
+### Phase 1 scope (DONE):
+- Schema + validate + atomic UPSERT + admin endpoint.
+
+### Audit critical fixes (3) applied BEFORE lock:
+- **C1 (hit_count overflow)**: rejected only `< 3`, max int64 (~9.2e18) allowed → caller submit huge value, subsequent increment wraps negative in SQLite. Fixed: cap `maxHitCount = 1_000_000`.
+- **C2 (exported whitelist map mutable shared state)**: `MistakeCategoryWhitelist` exported map can be mutated globally. Fixed: privatize to `mistakeCategoryWhitelist`, expose `IsValidMistakeCategory()` + `ListMistakeCategories()` accessor.
+- **C3 (TOCTOU race SELECT-then-INSERT)**: 2 concurrent submitter both miss SELECT, both INSERT → UNIQUE constraint fail → opaque 400 to 2nd. Fixed: single atomic `INSERT ... ON CONFLICT DO UPDATE SET ... RETURNING id, hit_count`. isNew distinguished via `hit_count == submitted` (fresh insert = newCount equals submitted value).
+
+### Important fix:
+- **#4 source_agent_id length cap**: 128 byte limit anti index bloat.
+
+### Defer phase 2:
+- Brain_antibody auto-promotion (cross-reference dengan AddDrawerFull wing='antibody')
+- WebSocket notify warga lain
+- `/api/mistakes/promote` admin manual promote endpoint
+- Rate limit (defer reverse-proxy layer)
+- agent_id format validation (e.g. regex match kernel warga list)
+- Content XSS escape (UI render concern, JSON safe)
+
+---
+
 ## 2026-05-29 21:20 WIB — Section 4: Prompt injection detector (phase 1) DONE + audit + LOCK
 
 - **feat(promptguard)**: `internal/promptguard/promptguard.go` (LOCKED) — standalone signature-based detector library. `Detect(content) → Result{algo_version, allowed, severity, score, hits, educational_context, reason}`. `HasInjection()` quick boolean. 13 regex signatures across 4 category:

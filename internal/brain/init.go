@@ -151,6 +151,29 @@ CREATE TABLE IF NOT EXISTS prompt_templates (
 	source_path TEXT DEFAULT '',
 	updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Section 7 — Mistakes journal (global tier).
+-- Receive promotion dari agent (per agent roadmap section 2 + 7).
+-- UNIQUE(category, title) → upsert hit_count semantik.
+CREATE TABLE IF NOT EXISTS mistakes_journal (
+	id                      INTEGER PRIMARY KEY AUTOINCREMENT,
+	category                TEXT NOT NULL,
+	title                   TEXT NOT NULL,
+	content                 TEXT NOT NULL,
+	source_agent_id         TEXT NOT NULL,
+	hit_count               INTEGER DEFAULT 1,
+	tier                    TEXT DEFAULT 'global',
+	reviewed_at             TEXT,
+	promoted_to_antibody_id TEXT,
+	created_at              TEXT DEFAULT CURRENT_TIMESTAMP,
+	updated_at              TEXT DEFAULT CURRENT_TIMESTAMP,
+	deleted_at              TIMESTAMP,
+	UNIQUE(category, title)
+);
+CREATE INDEX IF NOT EXISTS idx_mistakes_journal_tier      ON mistakes_journal(tier);
+CREATE INDEX IF NOT EXISTS idx_mistakes_journal_source    ON mistakes_journal(source_agent_id);
+CREATE INDEX IF NOT EXISTS idx_mistakes_journal_deleted   ON mistakes_journal(deleted_at);
+CREATE INDEX IF NOT EXISTS idx_mistakes_journal_updated   ON mistakes_journal(updated_at DESC);
 `
 
 // EnsureSchema bootstraps a Memory Palace DB at the resolved path if absent,

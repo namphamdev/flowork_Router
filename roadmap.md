@@ -164,9 +164,12 @@
 
 ---
 
-## Section 7 — Mistakes journal (global tier)
+## Section 7 — Mistakes journal (global tier) ✅ DONE (phase 1) 2026-05-29
 
 > **⚠️ OVER-PROMPT RISK** — brain_antibody jangan auto-inject ke setiap chat. Validate dulu via semantic match query, lalu inject MAX 3 antibody relevant. Sisanya retrieved on-demand via `brain_search`.
+
+> **Phase 1 scope (sekarang)**: schema + endpoint POST submit + GET list. Validate hit_count ≥ 3, category whitelist.
+> **Defer phase 2**: brain_antibody auto-promotion (cross-reference dengan `internal/brain/write.go::AddDrawerFull` ke wing='antibody'), WebSocket notify warga lain.
 
 **Goal:** receive promotion dari agent (lihat agent roadmap section 2 & 7). Validate. Insert ke `brain_antibody` global. Distribute ke semua warga via skill/contributions.
 
