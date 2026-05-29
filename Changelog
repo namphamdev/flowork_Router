@@ -4,6 +4,28 @@
 
 ---
 
+## 2026-05-29 22:00 WIB — Section 8: Skill catalog API (phase 1) DONE + LOCK
+
+- **feat(handlers)**: `handlers_brain_skills.go` (LOCKED) — read-only catalog API on top of existing `brain.Skills()` embedded library:
+  - `GET /api/brain/skills/list?search=&limit=` — return `SkillSummary` (name + description, NO body). Max 10 (over-prompt cap). Search query routed via existing `brain.SelectSkills` heuristic.
+  - `GET /api/brain/skills/get?id=<name>` — return full `SkillDoc` (name + description + body).
+- **verified end-to-end via 5 scenario**:
+  - List default (no search): 10 skill summary returned
+  - Search "audit" → 3 matching skill (audit-3-kriteria, audit_pass, audit_tool_sprawl)
+  - Get detail by name: body_len=4832 char (full markdown)
+  - Not found ID: 404
+  - Missing ID param: 400
+
+### Phase 1 scope (DONE):
+- List + get endpoints, anti over-prompt cap, search via existing heuristic.
+
+### Defer:
+- **POST `/api/brain/skills/contribute`** — submit skill baru (review-pending workflow). Need `skills_pending` table + admin approve UI.
+- **Category filter** — SkillDoc currently only Name+Description+Body, no category field. Defer schema extension.
+- **`store.Skills` table populate** — currently empty (0 rows). brain.Skills() pakai embedded `skilldata/*.md`. DB-backed contribution defer.
+
+---
+
 ## 2026-05-29 21:45 WIB — Section 7: Mistakes journal global (phase 1) DONE + audit + LOCK
 
 - **feat(brain)**: tabel `mistakes_journal` di brain DB (id, category, title, content, source_agent_id, hit_count, tier='global', reviewed_at, promoted_to_antibody_id, created_at, updated_at, deleted_at) + UNIQUE(category, title) + 4 index. Schema di `internal/brain/init.go::SchemaSQL`.

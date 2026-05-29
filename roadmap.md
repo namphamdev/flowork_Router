@@ -209,7 +209,7 @@ CREATE TABLE IF NOT EXISTS mistakes_journal (
 
 ---
 
-## Section 8 — Skill catalog API
+## Section 8 — Skill catalog API ✅ DONE (phase 1) 2026-05-29
 
 > **⚠️ OVER-PROMPT RISK** — catalog API return MAX 10 skill summary per query (id + label + 1-line desc). Full instructions DI-FETCH on-demand via `GET /api/skills/get?id=` saat warga eksplisit pilih skill. JANGAN bundle full catalog ke setiap response.
 
