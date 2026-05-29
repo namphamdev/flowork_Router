@@ -57,9 +57,12 @@
 
 ---
 
-## Section 2 — Importance scorer
+## Section 2 — Importance scorer ✅ DONE (phase 1) 2026-05-29
 
 **Goal:** tiap drawer dapet score importance (0-10). Score nentuin retrieval rank, retention priority, eligibility buat sacred lens (constitution promotion).
+
+> **Phase 1 (sekarang)**: endpoint `POST /api/brain/rescore` admin trigger (batch re-score live drawers via existing `ingest.Score`). `Score()` udah ada (Section 1 LOCKED) + sudah hooked ke ingestion pipeline.
+> **Defer**: cron weekly + retrieval-frequency tracking (butuh schema kolom `retrieval_count` atau separate hits table — defer sampai ada use case real).
 
 **Logic:**
 - Heuristik berbasis: signal_words count (keyword penting), source_type reputation, chunk_index (intro biasanya important), explicit flag dari ingest caller

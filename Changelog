@@ -4,6 +4,25 @@
 
 ---
 
+## 2026-05-29 20:45 WIB — Section 2: Importance scorer re-score (phase 1) DONE + audit + LOCK
+
+- **feat(brain)**: `internal/brain/rescore.go` (LOCKED) — `RescoreBatch(ctx, opts, scorer)` iterate live drawer (deleted_at IS NULL, quarantined=0), apply scorer fn (injected, anti circular import brain↔ingest), UPDATE importance dalam atomic transaction. `RescoreOpts{Wing, Limit, ForceOverride}`. `RescoreReport{Scanned, Updated, Unchanged, Preserved, Errors, SampleDelta}`.
+- **feat(handlers)**: `handlers_brain_rescore.go` (LOCKED) — `POST /api/brain/rescore` body `{wing, limit, force_override}`. MaxBytesReader 16KB. Chunked-body tolerated (ContentLength=-1 best-effort decode, io.EOF acceptable). Double cap defense: handler 5000 + brain internal 10000.
+- **audit critical fix C1 (manual-curation preserve)**: tanpa flag, RescoreBatch overwrite importance value yang caller manual-set via `/api/brain/ingest/submit` dengan Importance > 0 (mis. 7.0 untuk drawer high-priority). Tabel `drawers` ngga ada kolom pembeda manual vs auto — solusi: `preserveThreshold = 1.5` heuristic. Drawer dengan `abs(current - heuristic) > 1.5` di-assume manual curation → preserve (counter `Preserved` di report). `ForceOverride=true` di body bypass threshold.
+- **verified end-to-end**:
+  - drawer manual importance=10 → rescore default mode → `preserved:1, updated:0` (10 → 10) ✓
+  - same drawer + force_override=true → `updated:1`, 10 → 5.5 heuristic ✓
+  - 4 other drawer dengan importance=5.0–6.5 (within heuristic range): `unchanged` (delta < 0.01)
+
+### Deferred (acknowledged audit findings):
+- **I1 partial-failure StopOnError flag**: tx commits dengan sebagian update kalau per-drawer ExecContext error. Defer sampai ada use case batch transactional.
+- **I2 single giant tx vs concurrent writer**: 10k UPDATE single tx block ingest.Submit selama batch. Chunk per 500 / commit-restart defer sampai concurrent writer scale up real.
+- **I3 pagination cursor**: ORDER BY filed_at DESC + LIMIT bias ke drawer baru — drawer lama ngga ke-rescore. Defer sampai full sweep cron weekly.
+- **I4 in-memory `drawers` slice**: 10k × ~10KB content = 100MB. Acceptable single-user admin endpoint, defer streaming.
+- **Cron weekly + retrieval-frequency tracking**: roadmap mention defer (butuh schema kolom `retrieval_count` atau hits table — premature optimization).
+
+---
+
 ## 2026-05-29 20:00 WIB — Section 1: Adversarial audit + hardening + LOCK
 
 - **fix(atomicity)**: `internal/brain/write.go::AddDrawerFull` wrap drawer+FTS insert dalam `db.BeginTx` (sebelumnya: 2 separate Exec — kalau FTS gagal setelah drawer commit, drawer ada tapi tidak searchable → silent inconsistency).
