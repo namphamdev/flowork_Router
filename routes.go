@@ -254,4 +254,5 @@ func registerAuthRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/pricing/rules", PricingRulesHandler)
 	mux.HandleFunc("/api/policy/budgets", PolicyBudgetsHandler)
 	mux.HandleFunc("/api/policy/violations", PolicyViolationsHandler)
+	mux.HandleFunc("/api/policy/tick", PolicyTickHandler)
 }

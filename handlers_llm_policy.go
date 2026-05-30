@@ -14,6 +14,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"net/http"
@@ -379,6 +380,30 @@ func PolicyBudgetsHandler(w http.ResponseWriter, r *http.Request) {
 	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "method not allowed"})
 	}
+}
+
+// policyEngineRef — wired di main.go ke policy.Engine. Caller (tick handler)
+// invoke FireNow buat admin manual sweep.
+var policyEngineRef interface {
+	FireNow(ctx context.Context) (int, int)
+}
+
+// PolicyTickHandler — POST /api/policy/tick (admin manual sweep)
+func PolicyTickHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "method not allowed"})
+		return
+	}
+	if policyEngineRef == nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "policy engine not wired"})
+		return
+	}
+	evaluated, fired := policyEngineRef.FireNow(r.Context())
+	writeJSON(w, http.StatusOK, map[string]any{
+		"ok":        true,
+		"evaluated": evaluated,
+		"fired":     fired,
+	})
 }
 
 // PolicyViolationsHandler — GET /api/policy/violations?limit=

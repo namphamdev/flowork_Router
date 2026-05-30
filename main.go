@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/flowork-os/flowork_Router/internal/mesh"
+	"github.com/flowork-os/flowork_Router/internal/policy"
 	"github.com/flowork-os/flowork_Router/internal/store"
 
 	// Side-effect import: each filter's init() registers itself with rtk.
@@ -88,6 +89,13 @@ func main() {
 			log.Printf("WARN: mesh discovery: %v", derr)
 		}
 	}
+
+	// Section 27 phase 2: policy budget cron evaluator.
+	policyEngine := policy.New(d)
+	policyEngine.Start(ctx)
+	defer policyEngine.Stop()
+	policyEngineRef = policyEngine
+
 	loadMITMCaptureState()
 	startTunnelWatchdog()
 	providers, _ := store.ListProviders(d)
