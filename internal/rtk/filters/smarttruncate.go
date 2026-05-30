@@ -1,3 +1,10 @@
+// === LOCKED FILE ===
+// Status: STABLE — DO NOT MODIFY without owner approval.
+// Owner: Aola Sahidin (Mr.Dev)
+// Repo: https://github.com/flowork-os/flowork_Router
+// Locked at: 2026-05-30
+// Reason: Audit pass — ./internal/rtk/filters package — audit pass surface review.
+
 // Filter: smart-truncate — generic fallback that keeps head+tail with marker.
 // Always last in registration order; Detect always returns true so unmatched
 // inputs still get compressed cleanly when they exceed the cap.

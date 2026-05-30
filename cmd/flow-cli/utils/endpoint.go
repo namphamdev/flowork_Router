@@ -1,3 +1,10 @@
+// === LOCKED FILE ===
+// Status: STABLE — DO NOT MODIFY without owner approval.
+// Owner: Aola Sahidin (Mr.Dev)
+// Repo: https://github.com/flowork-os/flowork_Router
+// Locked at: 2026-05-30
+// Reason: Audit pass — ./cmd/flow-cli/utils package — audit pass surface review.
+
 // Endpoint resolver: builds the effective router base URL from env/flags.
 package utils
 
