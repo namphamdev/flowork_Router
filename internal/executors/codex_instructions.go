@@ -1,3 +1,10 @@
+// === LOCKED FILE ===
+// Status: STABLE — DO NOT MODIFY without owner approval.
+// Owner: Aola Sahidin (Mr.Dev)
+// Repo: https://github.com/flowork-os/flowork_Router
+// Locked at: 2026-05-30
+// Reason: Audit pass — Provider executor HTTP call.
+
 // Default system prompt injected into Codex requests when the client
 // didn't supply one. Mirrors the upstream Codex CLI harness rules.
 package executors

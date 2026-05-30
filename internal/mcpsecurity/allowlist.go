@@ -1,3 +1,10 @@
+// === LOCKED FILE ===
+// Status: STABLE — DO NOT MODIFY without owner approval.
+// Owner: Aola Sahidin (Mr.Dev)
+// Repo: https://github.com/flowork-os/flowork_Router
+// Locked at: 2026-05-30
+// Reason: Audit pass — audit pass surface review.
+
 // MCP spawn allowlist. The router lets the operator register Model Context
 // Protocol servers whose command + args are stored in the DB. Without this
 // gate, a malicious or hijacked settings row could spawn ARBITRARY

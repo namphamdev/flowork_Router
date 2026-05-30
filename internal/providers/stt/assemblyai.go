@@ -1,3 +1,10 @@
+// === LOCKED FILE ===
+// Status: STABLE — DO NOT MODIFY without owner approval.
+// Owner: Aola Sahidin (Mr.Dev)
+// Repo: https://github.com/flowork-os/flowork_Router
+// Locked at: 2026-05-30
+// Reason: Audit pass — Provider adapter.
+
 // Vendor: assemblyai — AssemblyAI Universal STT.
 // Protocol: 3-step (upload audio → submit transcription job → poll until
 // done). We poll up to 120s; longer audio is supported but the caller

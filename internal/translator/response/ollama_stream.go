@@ -1,3 +1,10 @@
+// === LOCKED FILE ===
+// Status: STABLE — DO NOT MODIFY without owner approval.
+// Owner: Aola Sahidin (Mr.Dev)
+// Repo: https://github.com/flowork-os/flowork_Router
+// Locked at: 2026-05-30
+// Reason: Audit pass — Provider request/response translator.
+
 // OpenAI chat-completion SSE → Ollama JSON-lines stream translator.
 // Native Ollama clients (the `ollama` CLI, libraries like ollama-python)
 // connect to /api/chat expecting ndjson rows, not OpenAI SSE. This file

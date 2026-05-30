@@ -1,3 +1,10 @@
+// === LOCKED FILE ===
+// Status: STABLE — DO NOT MODIFY without owner approval.
+// Owner: Aola Sahidin (Mr.Dev)
+// Repo: https://github.com/flowork-os/flowork_Router
+// Locked at: 2026-05-30
+// Reason: Audit pass — audit pass surface review.
+
 // Vendor: jina — Jina AI Reader (r.jina.ai/{url}).
 // Returns LLM-friendly markdown extraction. Free tier has rate limits;
 // supplying an API key lifts them. The "url" is prefixed onto the base —

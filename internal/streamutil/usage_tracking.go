@@ -1,3 +1,10 @@
+// === LOCKED FILE ===
+// Status: STABLE — DO NOT MODIFY without owner approval.
+// Owner: Aola Sahidin (Mr.Dev)
+// Repo: https://github.com/flowork-os/flowork_Router
+// Locked at: 2026-05-30
+// Reason: Audit pass — audit pass surface review.
+
 // Usage-shape helpers: normalize between OpenAI / Claude / Gemini, estimate
 // when the upstream omits usage, and add a small token buffer to avoid
 // context-window edge cases.

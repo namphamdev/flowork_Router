@@ -1,3 +1,10 @@
+// === LOCKED FILE ===
+// Status: STABLE — DO NOT MODIFY without owner approval.
+// Owner: Aola Sahidin (Mr.Dev)
+// Repo: https://github.com/flowork-os/flowork_Router
+// Locked at: 2026-05-30
+// Reason: Audit pass — Provider executor HTTP call.
+
 // Cursor x-cursor-checksum header generator (Jyh cipher).
 // The Cursor API rejects requests without a valid checksum derived from
 // the current timestamp + the caller's machine id. This file ports the

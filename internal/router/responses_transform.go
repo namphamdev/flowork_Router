@@ -1,3 +1,10 @@
+// === LOCKED FILE ===
+// Status: STABLE — DO NOT MODIFY without owner approval.
+// Owner: Aola Sahidin (Mr.Dev)
+// Repo: https://github.com/flowork-os/flowork_Router
+// Locked at: 2026-05-30
+// Reason: Audit pass — Router dispatcher.
+
 // Convert an OpenAI chat-completion SSE stream into Codex /v1/responses
 // SSE event shape: response.created → output_item.added → content_part.added
 // → output_text.delta* → content_part.done → output_item.done → completed.

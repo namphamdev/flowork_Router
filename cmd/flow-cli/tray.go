@@ -1,3 +1,10 @@
+// === LOCKED FILE ===
+// Status: STABLE — DO NOT MODIFY without owner approval.
+// Owner: Aola Sahidin (Mr.Dev)
+// Repo: https://github.com/flowork-os/flowork_Router
+// Locked at: 2026-05-30
+// Reason: Audit pass — CLI command/menu.
+
 // cmdTray launches the per-OS tray helper script. On Windows, that is a
 // PowerShell script using System.Windows.Forms.NotifyIcon (real native tray);
 // on Linux/macOS it is a shell script providing a CGO-free control surface

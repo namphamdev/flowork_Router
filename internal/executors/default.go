@@ -1,3 +1,10 @@
+// === LOCKED FILE ===
+// Status: STABLE — DO NOT MODIFY without owner approval.
+// Owner: Aola Sahidin (Mr.Dev)
+// Repo: https://github.com/flowork-os/flowork_Router
+// Locked at: 2026-05-30
+// Reason: Audit pass — Provider executor (HTTP call to upstream).
+
 // Executor: default — OpenAI-compatible passthrough fallback for any provider
 // that does not have a specialised executor.
 package executors

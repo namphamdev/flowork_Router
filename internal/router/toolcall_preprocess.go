@@ -1,3 +1,10 @@
+// === LOCKED FILE ===
+// Status: STABLE — DO NOT MODIFY without owner approval.
+// Owner: Aola Sahidin (Mr.Dev)
+// Repo: https://github.com/flowork-os/flowork_Router
+// Locked at: 2026-05-30
+// Reason: Audit pass — Router dispatcher.
+
 // Pre-dispatch normalisation: sanitise tool-call ids and patch missing
 // tool_result follow-ups. Operates on the request RIGHT before fan-out so
 // every downstream translator sees a well-formed payload.

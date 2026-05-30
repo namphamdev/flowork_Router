@@ -1,3 +1,10 @@
+// === LOCKED FILE ===
+// Status: STABLE — DO NOT MODIFY without owner approval.
+// Owner: Aola Sahidin (Mr.Dev)
+// Repo: https://github.com/flowork-os/flowork_Router
+// Locked at: 2026-05-30
+// Reason: Audit pass — Router dispatcher.
+
 // Collapse a Responses-API SSE stream into a single Responses JSON.
 // Mirror of ParseSSEToOpenAIResponse but for the /v1/responses event shape
 // (response.created / response.output_item.done / response.completed / …).

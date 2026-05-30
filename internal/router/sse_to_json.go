@@ -1,3 +1,10 @@
+// === LOCKED FILE ===
+// Status: STABLE — DO NOT MODIFY without owner approval.
+// Owner: Aola Sahidin (Mr.Dev)
+// Repo: https://github.com/flowork-os/flowork_Router
+// Locked at: 2026-05-30
+// Reason: Audit pass — Router dispatcher.
+
 // Aggregate an OpenAI-shape SSE stream into a single chat.completion JSON.
 // Used when a provider is streaming-only but the client requested a non-
 // streaming response — the router collects every `data: …` chunk, merges

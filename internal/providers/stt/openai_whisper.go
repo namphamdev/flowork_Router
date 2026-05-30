@@ -1,3 +1,10 @@
+// === LOCKED FILE ===
+// Status: STABLE — DO NOT MODIFY without owner approval.
+// Owner: Aola Sahidin (Mr.Dev)
+// Repo: https://github.com/flowork-os/flowork_Router
+// Locked at: 2026-05-30
+// Reason: Audit pass — Provider adapter.
+
 // Vendor: openai — OpenAI Whisper / gpt-4o-transcribe.
 // Protocol: multipart/form-data POST to /v1/audio/transcriptions. The file
 // field is "file"; model + language + response_format are extra form values.
