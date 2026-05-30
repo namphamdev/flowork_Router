@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"embed"
+	"encoding/hex"
 	"flag"
 	"log"
 	"net/http"
@@ -42,6 +43,12 @@ func main() {
 	addr := flag.String("addr", "127.0.0.1:2402", "listen address")
 	flag.Parse()
 
+	// Section 13 phase 2: long-lived ctx untuk goroutine (mesh discovery,
+	// future scheduler). Cancel saat shutdown.
+	ctx, cancelCtx := context.WithCancel(context.Background())
+	defer cancelCtx()
+	_ = ctx
+
 	log.Printf("flow_router %s starting on %s", version, *addr)
 	log.Printf("Data: %s", store.DBPath())
 
@@ -73,6 +80,13 @@ func main() {
 			shortKey = shortKey[:16]
 		}
 		log.Printf("Mesh identity: %s... (host=%s)", shortKey, id.Hostname)
+		// Section 13 phase 2: mDNS discovery goroutine. Pure Go UDP
+		// multicast. Best-effort — kalau port busy → announce-only mode.
+		pubkeyBytes, _ := hex.DecodeString(id.PubKeyHex)
+		discovery := mesh.NewDiscovery(pubkeyBytes, 2402, version, d)
+		if derr := discovery.Start(ctx); derr != nil {
+			log.Printf("WARN: mesh discovery: %v", derr)
+		}
 	}
 	loadMITMCaptureState()
 	startTunnelWatchdog()
