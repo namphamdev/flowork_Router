@@ -271,4 +271,10 @@ func registerAuthRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/policy/budgets", PolicyBudgetsHandler)
 	mux.HandleFunc("/api/policy/violations", PolicyViolationsHandler)
 	mux.HandleFunc("/api/policy/tick", PolicyTickHandler)
+
+	// Section 24-26 phase 2 runtime endpoints.
+	mux.HandleFunc("/api/provider/chain/run", ChainRunHandler)
+	mux.HandleFunc("/api/localai/runtime", LocalAIRuntimeHandler)
+	mux.HandleFunc("/api/pricing/calc", PricingCalcHandler)
+	mux.HandleFunc("/api/pricing/log_call", PricingLogCallHandler)
 }
