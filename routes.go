@@ -246,6 +246,22 @@ func registerAuthRoutes(mux *http.ServeMux) {
 
 	// Section 14-23 mesh stack phase 1 (schema only — single-owner no real mesh).
 	mux.HandleFunc("/api/mesh/stack/overview", MeshStackOverviewHandler)
+	// Section 14 phase 2: signed packet transport (receive + send + list).
+	mux.HandleFunc("/api/mesh/packet", MeshPacketReceiveHandler)
+	mux.HandleFunc("/api/mesh/packet/send", MeshPacketSendHandler)
+	mux.HandleFunc("/api/mesh/packets", MeshPacketsHandler)
+
+	// Section 16-23 phase 2: CRDT + knowledge + toolshare + karma + filter
+	// + LoRA + L3 + daemon status.
+	mux.HandleFunc("/api/mesh/crdt", MeshCRDTHandler)
+	mux.HandleFunc("/api/mesh/knowledge", MeshKnowledgeHandler)
+	mux.HandleFunc("/api/mesh/tool-manifests", MeshToolManifestsHandler)
+	mux.HandleFunc("/api/mesh/karma", MeshKarmaHandler)
+	mux.HandleFunc("/api/mesh/karma/decay", MeshKarmaDecayHandler)
+	mux.HandleFunc("/api/mesh/filter/test", MeshFilterTestHandler)
+	mux.HandleFunc("/api/mesh/lora-deltas", MeshLoraDeltasHandler)
+	mux.HandleFunc("/api/mesh/l3", MeshL3Handler)
+	mux.HandleFunc("/api/mesh/daemon/status", MeshDaemonStatusHandler)
 
 	// Section 24-27 LLM provider + LocalAI + pricing + policy.
 	mux.HandleFunc("/api/provider/chains", ProviderChainsHandler)

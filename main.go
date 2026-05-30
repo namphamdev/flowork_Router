@@ -90,6 +90,12 @@ func main() {
 		}
 	}
 
+	// Section 15 phase 2: gossip engine. Push pending packets to random
+	// peers every 10s.
+	gossipEngine := mesh.NewGossipEngine(d)
+	gossipEngine.Start(ctx)
+	defer gossipEngine.Stop()
+
 	// Section 27 phase 2: policy budget cron evaluator.
 	policyEngine := policy.New(d)
 	policyEngine.Start(ctx)
