@@ -182,6 +182,7 @@
           <div class="sidebar-item" data-tab="skills" data-i18n-tip="tip.skills"><span class="ic">🧠</span> <span data-i18n="nav.skills">Skills</span></div>
           <div class="sidebar-item" data-tab="brain"><span class="ic">🧬</span> <span data-i18n="nav.brain">Brain</span></div>
           <div class="sidebar-item" data-tab="mitm-proxy" data-i18n-tip="tip.mitmProxy"><span class="ic">🕵️</span> <span data-i18n="nav.mitm">MITM Proxy</span></div>
+          <div class="sidebar-item" data-tab="mesh-console"><span class="ic">🕸️</span> <span>Mesh &amp; Policy</span></div>
           <div class="sidebar-item" data-tab="console-log" data-i18n-tip="tip.consoleLog"><span class="ic">📜</span> <span data-i18n="nav.consoleLog">Console Log</span></div>
           <div class="sidebar-item" data-tab="settings" data-i18n-tip="tip.settings"><span class="ic">⚙️</span> <span data-i18n="nav.settings">Settings</span></div>
         </div>
@@ -1089,6 +1090,102 @@ done &lt; my_knowledge.jsonl</pre>
     </section>
 
     <!-- SETTINGS -->
+    <!-- Mesh & Policy console — Sections 13-23 mesh + 24-27 LLM/pricing/policy -->
+    <section id="tab-mesh-console" class="tab-content hidden">
+      <div class="max-w-7xl mx-auto p-6 space-y-4">
+        <div>
+          <h2 class="text-2xl font-bold mb-1">🕸️ Mesh &amp; Policy Console</h2>
+          <p class="text-sm text-slate-400">Operations dashboard untuk Section 13-27 (mesh stack + LLM provider + pricing + policy).</p>
+        </div>
+
+        <details class="glass p-4" open>
+          <summary class="cursor-pointer font-semibold text-purple-200">🆔 Mesh Identity + Peers (Section 13)</summary>
+          <div id="mc-identity" class="mt-3 text-sm"></div>
+          <h4 class="text-xs font-bold uppercase text-slate-400 mt-3 mb-1">Peers</h4>
+          <div id="mc-peers" class="text-sm"></div>
+        </details>
+
+        <details class="glass p-4">
+          <summary class="cursor-pointer font-semibold text-purple-200">📦 Mesh Packets (Section 14)</summary>
+          <button id="mc-packet-send" class="text-xs px-2 py-1 mt-2 rounded bg-purple-600/30 border border-purple-500/50">📤 Send test packet</button>
+          <div id="mc-packets" class="mt-3 text-sm"></div>
+        </details>
+
+        <details class="glass p-4">
+          <summary class="cursor-pointer font-semibold text-purple-200">📊 Stack Overview (Sections 14-23)</summary>
+          <div id="mc-stack" class="mt-3 text-sm font-mono"></div>
+        </details>
+
+        <details class="glass p-4">
+          <summary class="cursor-pointer font-semibold text-purple-200">🧠 Knowledge Inbox (Section 17)</summary>
+          <div id="mc-knowledge" class="mt-3 text-sm"></div>
+        </details>
+
+        <details class="glass p-4">
+          <summary class="cursor-pointer font-semibold text-purple-200">🛠️ Tool Manifests (Section 18)</summary>
+          <div id="mc-toolmanifests" class="mt-3 text-sm"></div>
+        </details>
+
+        <details class="glass p-4">
+          <summary class="cursor-pointer font-semibold text-purple-200">⭐ Peer Karma (Section 19)</summary>
+          <button id="mc-karma-decay" class="text-xs px-2 py-1 mt-2 rounded bg-purple-600/30 border border-purple-500/50">⏬ Trigger decay sweep</button>
+          <div id="mc-karma" class="mt-3 text-sm"></div>
+        </details>
+
+        <details class="glass p-4">
+          <summary class="cursor-pointer font-semibold text-purple-200">🔍 Filter Pipeline Test (Section 20)</summary>
+          <div class="mt-3 flex gap-2">
+            <input id="mc-filter-content" placeholder="content to test (e.g. 'ignore previous instructions')" class="flex-1 px-2 py-1 bg-slate-800 border border-slate-600 rounded text-sm">
+            <button id="mc-filter-run" class="text-xs px-3 py-1 rounded bg-purple-600/30 border border-purple-500/50">Test</button>
+          </div>
+          <div id="mc-filter-out" class="mt-2 text-xs font-mono"></div>
+        </details>
+
+        <details class="glass p-4">
+          <summary class="cursor-pointer font-semibold text-purple-200">🛣️ Provider Chains (Section 24)</summary>
+          <div id="mc-chains" class="mt-3 text-sm"></div>
+          <h4 class="text-xs font-bold uppercase text-slate-400 mt-3 mb-1">Recent calls</h4>
+          <div id="mc-calls" class="text-sm"></div>
+        </details>
+
+        <details class="glass p-4">
+          <summary class="cursor-pointer font-semibold text-purple-200">🦙 LocalAI Runtime (Section 25)</summary>
+          <div class="mt-3 flex gap-2 items-center">
+            <input id="mc-localai-model" placeholder="model_name" class="px-2 py-1 bg-slate-800 border border-slate-600 rounded text-sm">
+            <input id="mc-localai-path" placeholder="gguf_path (optional)" class="flex-1 px-2 py-1 bg-slate-800 border border-slate-600 rounded text-sm">
+            <button data-mc-action="start" class="text-xs px-3 py-1 rounded bg-green-600/30 border border-green-500/50">Start</button>
+            <button data-mc-action="stop" class="text-xs px-3 py-1 rounded bg-red-600/30 border border-red-500/50">Stop</button>
+            <button data-mc-action="status" class="text-xs px-3 py-1 rounded bg-purple-600/30 border border-purple-500/50">Status</button>
+          </div>
+          <div id="mc-localai-out" class="mt-2 text-xs font-mono"></div>
+          <h4 class="text-xs font-bold uppercase text-slate-400 mt-3 mb-1">Model registry</h4>
+          <div id="mc-localai-models" class="text-sm"></div>
+        </details>
+
+        <details class="glass p-4">
+          <summary class="cursor-pointer font-semibold text-purple-200">💲 Pricing Rules + Calc (Section 26)</summary>
+          <div class="mt-3 flex gap-2 flex-wrap items-center">
+            <input id="mc-price-provider" placeholder="provider" class="px-2 py-1 bg-slate-800 border border-slate-600 rounded text-sm w-32">
+            <input id="mc-price-model" placeholder="model" class="px-2 py-1 bg-slate-800 border border-slate-600 rounded text-sm w-48">
+            <input id="mc-price-input" placeholder="input tokens" type="number" class="px-2 py-1 bg-slate-800 border border-slate-600 rounded text-sm w-28">
+            <input id="mc-price-output" placeholder="output tokens" type="number" class="px-2 py-1 bg-slate-800 border border-slate-600 rounded text-sm w-28">
+            <button id="mc-price-calc" class="text-xs px-3 py-1 rounded bg-purple-600/30 border border-purple-500/50">Calc</button>
+            <span id="mc-price-out" class="text-sm text-green-300"></span>
+          </div>
+          <h4 class="text-xs font-bold uppercase text-slate-400 mt-3 mb-1">Active rules</h4>
+          <div id="mc-rules" class="text-sm"></div>
+        </details>
+
+        <details class="glass p-4">
+          <summary class="cursor-pointer font-semibold text-purple-200">📏 Policy Budgets + Violations (Section 27)</summary>
+          <button id="mc-policy-tick" class="text-xs px-2 py-1 mt-2 rounded bg-purple-600/30 border border-purple-500/50">⚡ Manual sweep</button>
+          <div id="mc-budgets" class="mt-3 text-sm"></div>
+          <h4 class="text-xs font-bold uppercase text-slate-400 mt-3 mb-1">Recent violations</h4>
+          <div id="mc-violations" class="text-sm"></div>
+        </details>
+      </div>
+    </section>
+
     <section id="tab-settings" class="tab-content hidden">
       <h2 class="text-xl font-bold mb-2">Settings</h2>
       <p class="text-sm text-slate-400 mb-5">Router configuration — auto-save on field change</p>
@@ -2730,6 +2827,7 @@ done &lt; my_knowledge.jsonl</pre>
       if (tab === 'tunnel') loadTunnel();
       if (tab === 'models') loadModelsMeta();
       if (tab === 'pricing') loadPricing();
+      if (tab === 'mesh-console') loadMeshConsole();
       if (tab === 'tags') loadTags();
       if (tab === 'translator') loadTranslatorDrafts();
       if (tab === 'mcp') loadMCP();
@@ -4712,6 +4810,177 @@ done &lt; my_knowledge.jsonl</pre>
       const sw = document.getElementById('localeSwitcher');
       if (sw) sw.value = ACTIVE_LOCALE;
     } catch {}
+
+    // ════════════════════════════════════════════════════════════════════════
+    // Mesh & Policy Console loader — Sections 13-27 unified dashboard
+    // ════════════════════════════════════════════════════════════════════════
+    function mcEsc(s) {
+      return String(s ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;')
+        .replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
+    }
+    async function mcGet(p) { try { return await (await fetch(p)).json(); } catch (e) { return { error: String(e) }; } }
+    async function mcPost(p, body) {
+      try {
+        const r = await fetch(p, { method:'POST', headers: body ? {'Content-Type':'application/json'} : {}, body: body ? JSON.stringify(body) : undefined });
+        return await r.json();
+      } catch (e) { return { error: String(e) }; }
+    }
+    function mcRow(cols) {
+      return `<div class="grid grid-cols-${cols.length} gap-2 py-1 border-b border-slate-700/50 text-xs">${cols.map(c=>`<div>${c}</div>`).join('')}</div>`;
+    }
+
+    async function loadMeshConsole() {
+      // Section 13 — identity + peers
+      const id = await mcGet('/api/mesh/identity');
+      document.getElementById('mc-identity').innerHTML = id.error
+        ? `<span class="text-red-400">${mcEsc(id.error)}</span>`
+        : `<div class="font-mono text-xs">pubkey: ${mcEsc((id.pubkey||'').slice(0,32))}…</div>
+           <div class="text-xs text-slate-400">hostname: ${mcEsc(id.hostname)} · peers: ${id.peer_count} · version: ${mcEsc(id.version)}</div>`;
+      const peers = await mcGet('/api/mesh/peers');
+      document.getElementById('mc-peers').innerHTML = (peers.peers || []).map(p =>
+        `<div class="text-xs font-mono bg-slate-800/50 p-2 rounded mb-1">
+           <strong>${mcEsc(p.pubkey_hex.slice(0,16))}…</strong> @ ${mcEsc(p.ip)}:${p.port}
+           <span class="text-slate-400 ml-2">trust=${p.trust_score.toFixed(2)} · ${p.blocked?'🚫':'✓'}</span>
+         </div>`).join('') || '<div class="text-slate-500 text-xs">no peers</div>';
+
+      // Section 14 — packets
+      const packets = await mcGet('/api/mesh/packets?limit=8');
+      document.getElementById('mc-packets').innerHTML = (packets.items || []).map(p =>
+        `<div class="text-xs font-mono bg-slate-800/50 p-2 rounded mb-1">
+           <strong>${mcEsc(p.packet_id)}</strong> · ${mcEsc(p.packet_type)} ·
+           <span class="text-slate-400">hop=${p.hop_count}/${5} · ${p.processed?'✓':'⏳'}</span>
+           <div class="text-slate-500 mt-1">${mcEsc(p.payload_preview)}</div>
+         </div>`).join('') || '<div class="text-slate-500 text-xs">no packets</div>';
+
+      // Stack overview
+      const stack = await mcGet('/api/mesh/stack/overview');
+      document.getElementById('mc-stack').innerHTML = stack.tables
+        ? `<pre class="text-xs">${mcEsc(JSON.stringify(stack.tables, null, 2))}</pre>`
+        : `<span class="text-red-400">${mcEsc(stack.error||'?')}</span>`;
+
+      // Section 17 — knowledge
+      const kn = await mcGet('/api/mesh/knowledge?limit=5');
+      const totals = kn.totals || {};
+      document.getElementById('mc-knowledge').innerHTML =
+        `<div class="text-xs text-slate-400 mb-2">shadow=${totals.shadow||0} · quarantine=${totals.quarantine||0} · promoted=${totals.promoted||0} · dropped=${totals.dropped||0}</div>` +
+        (kn.items || []).map(k =>
+          `<div class="text-xs bg-slate-800/50 p-2 rounded mb-1">
+             <strong>${mcEsc(k.packet_id)}</strong> · ${mcEsc(k.status)}
+             <div class="text-slate-500 mt-1">${mcEsc((k.drawer_content||'').slice(0,120))}</div>
+           </div>`).join('') || '<div class="text-slate-500 text-xs">no entries</div>';
+
+      // Section 18 — tool manifests
+      const tm = await mcGet('/api/mesh/tool-manifests');
+      document.getElementById('mc-toolmanifests').innerHTML = (tm.items || []).map(t =>
+        `<div class="text-xs font-mono bg-slate-800/50 p-2 rounded mb-1">
+           <strong>${mcEsc(t.tool_name)}</strong> from ${mcEsc(t.origin_pubkey.slice(0,16))}…
+           <div class="text-slate-400 mt-1">${mcEsc(t.manifest_preview)}</div>
+         </div>`).join('') || '<div class="text-slate-500 text-xs">no manifests</div>';
+
+      // Section 19 — karma
+      const karma = await mcGet('/api/mesh/karma');
+      document.getElementById('mc-karma').innerHTML = (karma.items || []).map(k =>
+        `<div class="text-xs font-mono bg-slate-800/50 p-2 rounded mb-1">
+           <strong>${mcEsc(k.pubkey_hex.slice(0,16))}…</strong>
+           <span class="${k.karma>0.5?'text-green-400':'text-red-400'}">karma=${k.karma.toFixed(3)}</span>
+           <span class="text-slate-400 ml-2">↑${k.packets_promoted} ↓${k.packets_dropped}</span>
+         </div>`).join('') || '<div class="text-slate-500 text-xs">no karma rows</div>';
+
+      // Section 24 — chains + calls
+      const chains = await mcGet('/api/provider/chains');
+      document.getElementById('mc-chains').innerHTML = (chains.items || []).map(c =>
+        `<div class="text-xs bg-slate-800/50 p-2 rounded mb-1">
+           <strong>${mcEsc(c.chain_name)}</strong>: <span class="font-mono text-purple-300">${mcEsc(c.providers_json)}</span>
+         </div>`).join('') || '<div class="text-slate-500 text-xs">no chains</div>';
+      const calls = await mcGet('/api/provider/calls?limit=5');
+      document.getElementById('mc-calls').innerHTML = (calls.items || []).map(c =>
+        `<div class="text-xs font-mono bg-slate-800/50 p-2 rounded mb-1">
+           ${mcEsc(c.provider)}/${mcEsc(c.model)} · $${(c.cost_usd||0).toFixed(6)} · ${c.latency_ms}ms ·
+           <span class="${c.status==='success'?'text-green-400':'text-red-400'}">${mcEsc(c.status)}</span>
+           <span class="text-slate-500 ml-2">caller=${mcEsc(c.caller)}</span>
+         </div>`).join('') || '<div class="text-slate-500 text-xs">no calls</div>';
+
+      // Section 25 — LocalAI
+      const la = await mcGet('/api/localai/models');
+      document.getElementById('mc-localai-models').innerHTML = (la.items || []).map(m =>
+        `<div class="text-xs bg-slate-800/50 p-2 rounded mb-1">
+           <strong>${mcEsc(m.model_name)}</strong> · ${(m.size_bytes/1e9).toFixed(2)}GB · ${m.loaded?'✓ loaded':'○'}
+           <div class="text-slate-500 font-mono">${mcEsc(m.gguf_path||'(no path)')}</div>
+         </div>`).join('') || '<div class="text-slate-500 text-xs">no models registered</div>';
+
+      // Section 26 — pricing rules
+      const rules = await mcGet('/api/pricing/rules');
+      document.getElementById('mc-rules').innerHTML = (rules.items || []).map(r =>
+        `<div class="text-xs bg-slate-800/50 p-2 rounded mb-1">
+           <strong>${mcEsc(r.provider)}/${mcEsc(r.model)}</strong> (${mcEsc(r.tier)}):
+           in $${r.input_per_1m_usd}/M, out $${r.output_per_1m_usd}/M ${r.enabled?'':'<span class="text-red-400">disabled</span>'}
+         </div>`).join('') || '<div class="text-slate-500 text-xs">no rules</div>';
+
+      // Section 27 — budgets + violations
+      const buds = await mcGet('/api/policy/budgets');
+      document.getElementById('mc-budgets').innerHTML = (buds.items || []).map(b =>
+        `<div class="text-xs bg-slate-800/50 p-2 rounded mb-1">
+           <strong>${mcEsc(b.scope)}/${mcEsc(b.scope_key||'*')}</strong> · ${mcEsc(b.metric_key)} ≤
+           <span class="text-green-300">$${b.budget_value}</span>
+           · period ${mcEsc(b.reset_period)} · warn ${(b.warning_pct*100).toFixed(0)}%
+         </div>`).join('') || '<div class="text-slate-500 text-xs">no budgets</div>';
+      const viols = await mcGet('/api/policy/violations?limit=5');
+      document.getElementById('mc-violations').innerHTML = (viols.items || []).map(v =>
+        `<div class="text-xs bg-red-900/20 border-l-2 border-red-500 p-2 rounded mb-1 font-mono">
+           budget #${v.budget_id}: actual $${v.actual_value} → <strong>${mcEsc(v.action_taken)}</strong>
+           <span class="text-slate-500 ml-2">${mcEsc(v.fired_at)}</span>
+         </div>`).join('') || '<div class="text-slate-500 text-xs">none</div>';
+    }
+
+    // Wire action buttons
+    document.addEventListener('click', async (e) => {
+      const t = e.target;
+      if (t.id === 'mc-packet-send') {
+        await mcPost('/api/mesh/packet/send', { packet_type:'gossip', payload_json:'{"test":true}' });
+        loadMeshConsole();
+      }
+      if (t.id === 'mc-karma-decay') {
+        const r = await mcPost('/api/mesh/karma/decay');
+        alert('decay affected ' + (r.affected_rows||0) + ' rows');
+        loadMeshConsole();
+      }
+      if (t.id === 'mc-filter-run') {
+        const content = document.getElementById('mc-filter-content').value;
+        const ts = Date.now() * 1000000;
+        const r = await mcPost('/api/mesh/filter/test', {
+          packet: { packet_id: 'test_' + Date.now(), origin_pubkey: 'abcd1234', timestamp_ns: ts },
+          content,
+        });
+        document.getElementById('mc-filter-out').innerHTML =
+          `<div class="${r.final_pass?'text-green-400':'text-red-400'} font-bold mb-1">final_pass=${r.final_pass}</div>` +
+          (r.decisions || []).map(d =>
+            `<div>${d.layer}: <span class="${d.decision==='reject'?'text-red-400':d.decision==='flag'?'text-yellow-400':'text-green-300'}">${d.decision}</span> ${mcEsc(d.reason||'')}</div>`
+          ).join('');
+      }
+      if (t.id === 'mc-price-calc') {
+        const r = await mcPost('/api/pricing/calc', {
+          provider: document.getElementById('mc-price-provider').value,
+          model: document.getElementById('mc-price-model').value,
+          input_tokens: parseInt(document.getElementById('mc-price-input').value || 0),
+          output_tokens: parseInt(document.getElementById('mc-price-output').value || 0),
+        });
+        document.getElementById('mc-price-out').textContent = r.error ? r.error : `→ $${r.cost_usd}`;
+      }
+      if (t.id === 'mc-policy-tick') {
+        const r = await mcPost('/api/policy/tick');
+        alert('eval=' + (r.evaluated||0) + ' fire=' + (r.fired||0));
+        loadMeshConsole();
+      }
+      if (t.dataset && t.dataset.mcAction) {
+        const action = t.dataset.mcAction;
+        const r = await mcPost('/api/localai/runtime', {
+          action,
+          model_name: document.getElementById('mc-localai-model').value || undefined,
+          gguf_path: document.getElementById('mc-localai-path').value || undefined,
+        });
+        document.getElementById('mc-localai-out').textContent = JSON.stringify(r, null, 2);
+      }
+    });
   </script>
 </body>
 </html>
