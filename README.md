@@ -19,13 +19,13 @@ A lightweight, **self-hosted [LiteLLM](https://github.com/BerriAI/litellm) / [Op
 
 </div>
 
-> ### 🤖 The optimal pairing — [Flowork AI Agent](https://github.com/flowork-os/flowork-ai-agent)
+> ### 🤖 The optimal pairing — [Flowork AI Agent](https://github.com/flowork-os/Flowork_Agent)
 >
 > Flow Router welcomes **any OpenAI-compatible agent** (Claude Code, Cursor, Cline, Codex, Continue, Aider, custom apps…). For the **deepest, most-integrated experience** — autonomous multi-agent body, native [`FLOWORK_BRAIN_REMOTE`](#-brain-endpoint--shared-portable-knowledge-brain) thin-mode flag, full caretaker pipeline (ingestor, training, dashboards), 6 purpose-built subagent types — install **Flowork** alongside.
 >
 > **One brain (this router) + many bodies (Flowork or any agent) = your full sovereign AI stack.**
 >
-> 👉 **[github.com/flowork-os/flowork-ai-agent](https://github.com/flowork-os/flowork-ai-agent)**
+> 👉 **[github.com/flowork-os/Flowork_Agent](https://github.com/flowork-os/Flowork_Agent)**
 
 ---
 
@@ -284,12 +284,12 @@ But for the **most-integrated experience** — thin-body remote-brain flag, full
 caretaker mode (ingestor + training + DB management), kernel-level cascade
 routing, the whole "1 brain, many bodies" loop — use the purpose-built companion:
 
-> 👉 **[`flowork-os/flowork-ai-agent`](https://github.com/flowork-os/flowork-ai-agent)**
+> 👉 **[`flowork-os/Flowork_Agent`](https://github.com/flowork-os/Flowork_Agent)**
 
 It honors `FLOWORK_BRAIN_REMOTE` natively (kernel's RAG path routes through
 Flow Router with zero config), ships the matching ingestor/training/dashboards
 on the caretaker side, and is the reference implementation of the "thin/Pi body"
-mode. Good for any agent → optimal with `flowork-ai-agent`.
+mode. Good for any agent (Hermes, OpenClaw, Claude Code, Cursor, …) → optimal with [`flowork-os/Flowork_Agent`](https://github.com/flowork-os/Flowork_Agent).
 
 ---
 
@@ -577,7 +577,7 @@ Yes — streaming SSE, OpenAI ⇄ Anthropic ⇄ Gemini tool-call translation (in
 Yes — that's the core idea. The shared brain is served via the OpenAI-compatible endpoint, so any agent that points `base_url` at Flow Router and selects the brain model gets the same retrieved knowledge + skills + persona, server-side, with **zero changes to the agent itself**. One brain, many bodies.
 
 **Which agent is the most-integrated companion?**
-[**Flowork**](https://github.com/flowork-os/flowork-ai-agent) — it ships native support for `FLOWORK_BRAIN_REMOTE`, the full caretaker pipeline (ingestor, training, dashboards), and the matching multi-agent runtime. Flow Router works great solo or with any compatible agent; pair it with Flowork for the most-integrated stack.
+[**Flowork**](https://github.com/flowork-os/Flowork_Agent) — it ships native support for `FLOWORK_BRAIN_REMOTE`, the full caretaker pipeline (ingestor, training, dashboards), and the matching multi-agent runtime. Flow Router works great solo or with any compatible agent; pair it with Flowork for the most-integrated stack.
 
 **How does the brain learn?**
 Opt-in compounding. Every brain-tagged interaction can be queued as a contribution; `POST /api/brain/ingest/run` (or the dashboard button) turns the queue into FTS-indexed knowledge chunks the brain serves next time. All connected agents benefit.
@@ -606,7 +606,7 @@ Released under the [MIT License](LICENSE). Free to use, modify and self-host.
 
 **Flow Router** — your AI traffic, your rules, your machine.
 
-Pairs perfectly with **[Flowork AI Agent](https://github.com/flowork-os/flowork-ai-agent)** — the purpose-built body for the "1 brain, many bodies" stack.
+Pairs perfectly with **[Flowork AI Agent](https://github.com/flowork-os/Flowork_Agent)** — the purpose-built body for the "1 brain, many bodies" stack.
 
 ⭐ Star this repo if it saves you time or money.
 
