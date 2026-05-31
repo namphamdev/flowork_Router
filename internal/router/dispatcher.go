@@ -296,6 +296,11 @@ func dispatchSingleModel(ctx context.Context, d *sql.DB, req OpenAIRequest, sett
 		matches = applyFallbackStrategy(matches, settings.FallbackStrategy, req.Model)
 	}
 
+	// Per-(provider,model) cooldown: push currently locked pairs to the back so a
+	// healthy provider is tried first. Never drops them — a fully-locked model
+	// still gets a last-resort attempt (zero regression vs the pre-lock loop).
+	matches = reorderByModelLock(matches, req.Model)
+
 	// Try candidates in order, fallback to next on error
 	var lastErr error
 	startTotal := time.Now()
@@ -310,12 +315,20 @@ func dispatchSingleModel(ctx context.Context, d *sql.DB, req OpenAIRequest, sett
 		})
 
 		if err == nil && resp != nil {
+			clearModelLock(p.ID, req.Model) // recovered → prefer this pair again
 			log.Printf("flow_router dispatch model=%s → provider=%s latency=%dms tokens=%d",
 				req.Model, p.Name, latencyMs, resp.Usage.TotalTokens)
 			recordBrainContribution(d, settings, brainInfo, answerText(resp))
 			return resp, status, nil
 		}
 		lastErr = err
+		// Park this (provider,model) for a cooldown (exponential backoff via the
+		// shared 17-rule table) so subsequent requests skip it until it recovers.
+		errText := ""
+		if err != nil {
+			errText = err.Error()
+		}
+		lockModel(p.ID, req.Model, status, errText)
 		log.Printf("flow_router fallback model=%s provider=%s failed (%v), trying next", req.Model, p.Name, err)
 	}
 
