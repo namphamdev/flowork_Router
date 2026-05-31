@@ -4,6 +4,37 @@
 
 ---
 
+## 2026-05-31 14:30 WIB — Claude tool cloaking (anti-ban) — Go port of 9router
+
+Studied decolua/9router (stable reference) and ported its Claude account-protection
+logic to Go. Build + vet + test + `-race` CLEAN (33 pkg ok / 0 fail). New unit
+tests: `internal/router/cloaking_test.go` (6 tests, all pass).
+
+- **feat(router/cloaking)** NEW `internal/router/cloaking.go` — Claude OAuth
+  cloaking, faithful Go port of `open-sse/utils/claudeCloaking.js`:
+  - `cloakClaudeTools` — rename every client tool to `<name>_cc` (in `tools[]`
+    AND in assistant `tool_use` history blocks), append 20 Claude-Code decoy
+    tools marked "unavailable" → request mirrors a real Claude Code session.
+  - `applyClaudeIdentityCloak` — inject synthetic `x-anthropic-billing-header`
+    system block + fake `metadata.user_id` (device/account/session UUIDs,
+    CC 2.1.92 format). Idempotent.
+  - `decloakAnthropicToolNames` — restore original tool names in the response so
+    the client never sees the `_cc` suffix.
+  - Gated by `claudeUsesOAuth(p)` — only fires for Claude OAuth (sk-ant-oat /
+    tokenSource=claude_credentials); API-key / no-auth providers untouched.
+- **wire** all 4 Anthropic send paths (dispatcher.go forwardAnthropic,
+  tools.go forward+stream WithTools, dispatcher_stream.go streamAnthropic):
+  - non-stream-with-tools → full tool-suffix + decoy + identity + response decloak
+  - stream + non-stream text → identity cloak (billing + user_id)
+  - NOTE: tool-suffix cloak intentionally NOT on the streaming-tools path (would
+    require rewriting tool_use names inside SSE deltas); identity cloak — the
+    primary anti-ban signal — is applied there. Honest scoping, documented inline.
+- Comparison findings vs 9router logged in chat: translator architecture is
+  identical (dual-hop source→openai→target registry); remaining gaps —
+  multi-account-per-provider rotation + per-model lock granularity, and Claude
+  header-cache wiring (infra exists in streamutil, not yet wired) — left as
+  documented follow-ups (bigger/riskier; deferred rather than rushed).
+
 ## 2026-05-31 09:25 WIB — Mesh phase 3: close all 7 P2P gaps → "anti-kiamat" mesh functional
 
 Audit-driven follow-up: the mesh stack had real logic but key pieces weren't

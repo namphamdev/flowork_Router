@@ -446,6 +446,13 @@ func forwardAnthropic(ctx context.Context, p *store.ProviderConnection, baseURL 
 		return nil, 0, fmt.Errorf("marshal anthropic: %w", err)
 	}
 
+	// Claude OAuth identity cloaking (anti-ban): billing header + fake user_id.
+	// No tools on this path, so only the identity cloak applies. No-op for
+	// non-OAuth providers.
+	if claudeUsesOAuth(p) {
+		body = applyClaudeIdentityCloak(body, "")
+	}
+
 	endpoint := strings.TrimRight(baseURL, "/") + "/messages"
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(body))
 	if err != nil {

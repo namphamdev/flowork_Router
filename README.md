@@ -4,6 +4,8 @@
 
 ### Self-hosted AI gateway, LLM proxy & sovereign P2P mesh — one OpenAI-compatible endpoint for every provider
 
+#### 🔌 40+ providers · 🌍 OpenAI ⇄ Claude ⇄ Gemini translation · 🥷 Claude anti-ban cloaking · 🕸️ P2P mesh · 🧬 shared brain · ⚡ single Go binary
+
 **Route Claude, GPT, Gemini, DeepSeek, Ollama, vLLM and 40+ providers through a single fast endpoint.**
 Bring your own subscription or API key, plug it into Claude Code, Cursor, Codex, Cline and any OpenAI-compatible tool.
 
@@ -119,6 +121,7 @@ Usage, cost and latency are logged for every call. One brain, many bodies, learn
 | 🪨 **Caveman style modifier** | Output-token saver: appends a "respond tersely" instruction (`lite` / `full` / `ultra`) to every system message before dispatch. Code blocks, file paths, commands, URLs and security warnings stay exact regardless of level. |
 | 🧬 **Cursor ConnectRPC executor** | Experimental `cursor-proto` executor speaks the real api2.cursor.sh wire format (ConnectRPC + hand-rolled protobuf for StreamUnifiedChat) so real Cursor subscriptions work without an OpenAI-compat shim. Codec is fully unit-tested. |
 | ⚡ **Claude CLI bypass** | Detects 5 known no-op patterns from Claude Code (Warmup / count / title-extraction / isNewTopic / custom skip patterns) and answers locally with a 2-token stub. Pure local round-trip — zero upstream cost. |
+| 🥷 **Claude anti-ban cloaking** | When driving a **Claude Pro/Max OAuth** subscription, requests are cloaked to mirror a genuine Claude Code session: client tools renamed with a `_cc` suffix + 20 native "decoy" tools, synthetic `x-anthropic-billing-header`, and a CC-format fake `user_id` (device/account/session UUIDs). Tool names are transparently restored in the response. Slashes account-ban risk; auto-off for API-key providers. |
 | 🛡️ **Google CloudCode projectId resolver** | Antigravity / gemini-cli `useRealProjectId=true` resolves a real account-bound project id via `/v1internal:loadCodeAssist` (with onboardUser fallback), cached 1h per connection. Avoids the random-id anti-abuse flag. |
 | 🔁 **Per-model combo fallback** | When all providers for a combo's picked model 5xx, the dispatcher walks the remaining combo.Models in order instead of giving up. 4xx-class errors break out so operator blocks aren't masked. |
 | 🧩 **Provider compat prefixes** | A provider named `openai-compatible-<x>` or `anthropic-compatible-<x>` auto-resolves format + base URL without explicit fields. Suffix `-responses` switches to the OpenAI Responses API path. Explicit fields always win. |
