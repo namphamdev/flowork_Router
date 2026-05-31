@@ -282,16 +282,23 @@
     .hdr-locale:hover { color: var(--accent-light); border-color: var(--accent); }
     .hdr-locale option { background: var(--bg-elev); color: var(--text-primary); }
     .hdr-btn {
-      font-size: 0.72rem; font-weight: 500; letter-spacing: 0.02em;
-      padding: 4px 11px; border-radius: 6px;
-      border: 1px solid var(--border-glass); color: var(--text-secondary);
-      transition: background 0.14s, color 0.14s, border-color 0.14s;
-      white-space: nowrap; line-height: 1.4;
+      display: inline-flex; align-items: center; gap: 7px;
+      font-size: 0.92rem; font-weight: 700; letter-spacing: 0.01em;
+      padding: 9px 18px; border-radius: 10px;
+      border: 1px solid transparent; color: #fff; text-decoration: none;
+      transition: transform 0.15s, filter 0.15s, box-shadow 0.15s, border-color 0.15s;
+      white-space: nowrap; line-height: 1.2;
     }
-    .hdr-btn:hover { background: rgba(255,255,255,0.04); }
-    .hdr-btn--gh:hover { color: #c4b5fd; border-color: rgba(139,92,246,0.45); }
-    .hdr-btn--tg:hover { color: #7dd3fc; border-color: rgba(56,189,248,0.45); }
-    .hdr-btn--pp:hover { color: #f9a8d4; border-color: rgba(236,72,153,0.45); }
+    .hdr-btn:hover { transform: translateY(-1px); filter: brightness(1.10); }
+    /* Bold color-coded CTAs — prominent + scannable in the header */
+    .hdr-btn--gh { background: linear-gradient(135deg,#3a3f52,#23283a); border-color: rgba(255,255,255,0.22); }
+    .hdr-btn--gh:hover { border-color: #c4b5fd; box-shadow: 0 5px 18px rgba(139,92,246,0.45); }
+    .hdr-btn--tg { background: linear-gradient(135deg,#2AABEE,#1c93d6); border-color: #2AABEE; box-shadow: 0 2px 10px rgba(42,171,238,0.40); }
+    .hdr-btn--tg:hover { border-color: #bfe9ff; box-shadow: 0 5px 18px rgba(42,171,238,0.60); }
+    .hdr-btn--pp { background: linear-gradient(135deg,#ec4899,#f59e0b); border-color: #ec4899; box-shadow: 0 2px 10px rgba(236,72,153,0.40); }
+    .hdr-btn--pp:hover { border-color: #fbcfe8; box-shadow: 0 5px 18px rgba(236,72,153,0.60); }
+    .hdr-btn--agent { background: linear-gradient(135deg,#8b5cf6,#6d28d9); border-color: #8b5cf6; box-shadow: 0 2px 10px rgba(139,92,246,0.45); }
+    .hdr-btn--agent:hover { border-color: #c4b5fd; box-shadow: 0 5px 18px rgba(139,92,246,0.65); }
   </style>
 
   <!-- ── Right column: header bar + scrollable main ───────────────────── -->
@@ -306,9 +313,10 @@
         <option value="vi">VI</option>
         <option value="zh-CN">ZH</option>
       </select>
-      <a href="https://github.com/flowork-os/flowork_Router" target="_blank" rel="noopener noreferrer" data-i18n-tip="tipb.github" class="hdr-btn hdr-btn--gh" title="GitHub">GitHub</a>
-      <a href="https://t.me/+55oqrk75lc43YWE1" target="_blank" rel="noopener noreferrer" data-i18n-tip="tipb.telegram" class="hdr-btn hdr-btn--tg" title="Telegram">Telegram</a>
-      <a href="https://www.paypal.com/paypalme/TeetahDev" target="_blank" rel="noopener noreferrer" data-i18n-tip="tipb.donate" class="hdr-btn hdr-btn--pp" title="Donate">Donate</a>
+      <a href="https://github.com/flowork-os/flowork_Router" target="_blank" rel="noopener noreferrer" data-i18n-tip="tipb.github" class="hdr-btn hdr-btn--gh" title="GitHub">★ GitHub</a>
+      <a href="https://t.me/+55oqrk75lc43YWE1" target="_blank" rel="noopener noreferrer" data-i18n-tip="tipb.telegram" class="hdr-btn hdr-btn--tg" title="Telegram">✈ Telegram</a>
+      <a href="https://www.paypal.com/paypalme/TeetahDev" target="_blank" rel="noopener noreferrer" data-i18n-tip="tipb.donate" class="hdr-btn hdr-btn--pp" title="Donate">❤ Donate</a>
+      <a href="https://github.com/flowork-os/Flowork_Agent" target="_blank" rel="noopener noreferrer" data-i18n-tip="tipb.agent" class="hdr-btn hdr-btn--agent" title="Flowork AI Agent — recommended companion">🤖 AI Agent</a>
     </header>
 
   <!-- ── Main ─────────────────────────────────────────────────────────── -->
@@ -1864,6 +1872,7 @@ done &lt; my_knowledge.jsonl</pre>
         "desc.dashPassword": "Set a password here before enabling \"Require login\" (otherwise you'll lock yourself out).",
         "tipb.github": "View flow_router on GitHub.",
         "tipb.donate": "Support development — donate via PayPal.",
+        "tipb.agent": "Flowork AI Agent — the recommended companion body (works with any agent, optimal with this one).",
         "tipb.telegram": "Join the flow_router Telegram community.",
         "login.intro": "This gateway requires login.",
         "login.signin": "Sign in",
