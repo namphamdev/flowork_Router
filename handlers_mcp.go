@@ -73,6 +73,10 @@ func mcpGatewayMessageHandler(w http.ResponseWriter, r *http.Request, id string)
 	switch srv.Transport {
 	case "http", "sse":
 		endpoint := srv.URL
+		if _, verr := blockMetadataURL(ctx, endpoint); verr != nil {
+			http.Error(w, "blocked target (SSRF guard): "+verr.Error(), http.StatusForbidden)
+			return
+		}
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(msg))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -189,6 +193,10 @@ func mcpGatewaySSEHandler(w http.ResponseWriter, r *http.Request, id string) {
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		http.Error(w, "streaming not supported", http.StatusInternalServerError)
+		return
+	}
+	if _, verr := blockMetadataURL(r.Context(), srv.URL); verr != nil {
+		http.Error(w, "blocked target (SSRF guard): "+verr.Error(), http.StatusForbidden)
 		return
 	}
 	req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, srv.URL, nil)

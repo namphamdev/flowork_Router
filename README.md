@@ -2,7 +2,7 @@
 
 # 🛣️ Flow Router
 
-### Self-hosted AI gateway & LLM proxy — one OpenAI-compatible endpoint for every provider
+### Self-hosted AI gateway, LLM proxy & sovereign P2P mesh — one OpenAI-compatible endpoint for every provider
 
 **Route Claude, GPT, Gemini, DeepSeek, Ollama, vLLM and 40+ providers through a single fast endpoint.**
 Bring your own subscription or API key, plug it into Claude Code, Cursor, Codex, Cline and any OpenAI-compatible tool.
@@ -15,7 +15,7 @@ A lightweight, **self-hosted [LiteLLM](https://github.com/BerriAI/litellm) / [Op
 [![Single Binary](https://img.shields.io/badge/deploy-single%20binary-success)](#-deployment)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#-contributing)
 
-[Features](#-features) · [Quick Start](#-quick-start) · [Supported Tools](#-supported-cli-tools) · [Providers](#-supported-providers) · [API](#-api-reference) · [Deploy](#-deployment)
+[Features](#-features) · [Mesh](#-sovereign-mesh--peer-to-peer-routers-that-survive-the-apocalypse) · [Quick Start](#-quick-start) · [Supported Tools](#-supported-cli-tools) · [Providers](#-supported-providers) · [API](#-api-reference) · [Deploy](#-deployment)
 
 </div>
 
@@ -293,6 +293,69 @@ mode. Good for any agent → optimal with `flowork-ai-agent`.
 
 ---
 
+## 🕸️ Sovereign Mesh — peer-to-peer routers that survive the apocalypse
+
+Flow Router isn't just a single-box gateway. Turn on the **mesh** and every router
+becomes a sovereign node in a **leaderless, internet-optional, peer-to-peer brain
+network** — designed to keep your AI stack alive even if the cloud, the company,
+or the internet itself goes dark. No central server. No single point of failure.
+Your knowledge replicates host-to-host and **defends itself from hostile peers**.
+
+> **The vision:** one brain today, a self-healing constellation of brains
+> tomorrow. Routers find each other on the LAN, sign every byte they exchange,
+> score each other's trustworthiness, and refuse to be poisoned — so your
+> collective intelligence outlives any one machine.
+
+### How the mesh works
+
+```
+   Router A  ◀────── signed packets (ed25519) ──────▶  Router B
+   :2402                                                   :2402
+     │   mDNS announce (224.0.0.251:5353) every 30s          │
+     │   gossip push → 3 random peers every 10s              │
+     ▼                                                       ▼
+   ┌──────────────────────────────────────────────────────────┐
+   │  EVERY inbound knowledge packet runs the 9-layer gauntlet  │
+   │  L1 signature · L2 freshness · L3 karma · L4 quarantine    │
+   │  L5 PII · L6 injection · L7 near-dup · L8/9 consensus      │
+   │      pass → promote + reward karma                         │
+   │      flag → quarantine for review                          │
+   │      reject → drop + penalise the sender's karma           │
+   └──────────────────────────────────────────────────────────┘
+```
+
+### What you get — all live, all tested
+
+| Capability | What it does |
+|---|---|
+| 🪪 **ed25519 node identity** | Every router self-generates a keypair on first boot — its sovereign "passport" on the mesh. Private key never leaves the box, never logged. |
+| 📡 **Zero-config LAN discovery** | Pure-Go mDNS multicast — routers find each other automatically, no seed list, no config. Announce-only fallback when the port is busy. |
+| ✍️ **Signed packet transport** | Every packet is `ed25519(sha256(canonical))`-signed and dedup'd by id. Tampered or replayed packets are rejected at the door. Max-hop flood guard. |
+| 🤝 **Gossip propagation** | Push-based epidemic broadcast to N random peers every 10s with seen-set dedup, so knowledge spreads without flooding. 2-of-3 BFT hook for emergency revocation. |
+| 🛡️ **9-layer anti-poisoning filter** | Hostile peers **cannot** silently inject knowledge: signature → freshness → karma → quarantine-pattern → PII → prompt-injection → near-duplicate → consensus → promote. Wired into the real receive path, not just a test endpoint. |
+| ⭐ **Karma trust scoring** | Every peer earns/loses trust (promote +0.05, drop −0.1, bad signature −0.2). Peers below the floor are **auto-gated out of discovery and gossip**. Daily decay toward neutral prevents stale grudges. |
+| 🧬 **Near-duplicate detection** | Dependency-free trigram-Jaccard similarity rejects reworded copies of knowledge you already hold — no embedding model, no network, fully offline-capable. |
+| 🔀 **CRDT state replication** | Conflict-free merge across peers: G-Counter, LWW-Register, G-Set, 2P-Set + vector-clock causal ordering — any merge order converges, no coordinator needed. |
+| 🧰 **Cross-host tool sharing** | Peers publish signed tool manifests; a content validator blocks oversized/malformed manifests and execution-smuggling tokens before they're ever discoverable. |
+| 🚫 **Cloud-metadata firewall** | Discovery hard-blocks `169.254.0.0/16` + known metadata IPs/hostnames (`INVARIANT 2`) — the mesh can never be tricked into an SSRF pivot. |
+| 🧠 **Knowledge inbox state machine** | Imported knowledge flows `shadow → quarantine → promoted` (or `dropped`) — foreign data is never trusted on arrival. |
+| 📦 **Signed LoRA delta transport** | Model-increment deltas are scheme-allowlisted (`https`/`ipfs`/`magnet`/`file` for sneakernet), size-capped, signature-required, and SHA-256-verified on download. |
+| 🩺 **Diagnostic console** | The dashboard's **Mesh & Policy Console** surfaces identity, peers, packets, knowledge inbox, karma table, tool manifests, and the full filter audit trail at a glance. |
+
+> **Honest status.** Discovery, identity, signed transport, gossip, the 9-layer
+> filter, karma gating, near-dup, CRDT merge, tool validation, and LoRA delta
+> transport are **implemented, unit-tested, and verified on a running router**.
+> Cross-internet (WAN) bootstrap beyond the LAN, and *applying* a LoRA delta to
+> live model weights, remain on the roadmap — the latter needs a fine-tuning
+> runtime this binary intentionally doesn't ship. Everything advertised above
+> runs today; we don't market what we haven't built.
+
+The mesh starts automatically with the router; inspect it via the `/api/mesh/*`
+endpoints or the dashboard's Mesh & Policy Console. Running solo? It stays dormant
+and weightless until a second node appears on your network.
+
+---
+
 ## 🚀 Quick Start
 
 ### Build from source
@@ -491,31 +554,7 @@ Need an edge proxy? The **Proxy Pools** panel generates ready-to-deploy worker s
 
 ---
 
-## 🗺️ Roadmap
 
-- [x] Multi-dialect endpoint (OpenAI / Anthropic / Gemini) + streaming
-- [x] Tool calling translation
-- [x] CLI auto-config, OAuth flows, tunnels, MITM, usage analytics
-- [x] MCP registry with live tool discovery
-- [x] Streaming tool-use rounds
-- [x] Per-intent multiplexing (local model for private prompts, cloud for the rest)
-- [x] Cross-device sync (pull-based config sync between instances)
-- [x] **Shared knowledge brain** — Memory Palace FTS5 cascade + embedded skill library + auto-injection
-- [x] **Brain admin dashboard** — Overview · Search · Constitution editor · Typed Memory · Personas · Compounding
-- [x] **Sole-owner brain** — read + write + admin + auto-learn (Option C)
-- [x] **Compounding ingest loop** — interactions → drawers + FTS, quality-gated
-- [x] **Thin / Pi body mode** — `FLOWORK_BRAIN_REMOTE` flag for any Flowork-style agent
-- [x] **flowork-kernel-compatible RAG endpoint** — `/api/brain/search-drawers`
-- [x] **Login rate limiter** — progressive lockout per-IP
-- [x] **DB backup + migrations** — `VACUUM INTO` snapshots, versioned migrations
-- [x] **Advanced RTK token-saver** — 11 tool-output filters with auto-detect
-- [x] **18 vendor executors** — antigravity, azure, codex, cursor, github, grok-web, iflow, kiro, qwen, vertex, …
-- [x] **MITM TLS proxy** — cert manager + DNS hijack + per-IDE rewriters
-- [x] **`flow-cli` companion binary + interactive TUI + tray + autostart**
-- [x] **Drop-in SKILL.md packages** — 7 skills any Claude/Cursor/ChatGPT can ingest
-- [ ] **GUI tabs for new features** — Backups · MITM control panel · vendor executor selector dropdown · tunnel-watchdog status indicator (planned next dashboard pass)
-
----
 
 ## ❓ FAQ
 
@@ -571,6 +610,6 @@ Pairs perfectly with **[Flowork AI Agent](https://github.com/flowork-os/flowork-
 
 ⭐ Star this repo if it saves you time or money.
 
-<sub>Keywords: AI gateway · LLM gateway · LLM proxy · LLM router · OpenAI-compatible API · self-hosted · LiteLLM alternative · OpenRouter alternative · multi-provider · OpenAI · Anthropic Claude · Google Gemini · DeepSeek · Ollama · vLLM · Claude Code · Cursor · MCP · Go single binary · AI agent · autonomous agent · agentic AI · multi-agent · shared brain · Memory Palace · RAG · brain-as-a-service · Flowork · 1 brain many bodies</sub>
+<sub>Keywords: AI gateway · LLM gateway · LLM proxy · LLM router · OpenAI-compatible API · self-hosted · LiteLLM alternative · OpenRouter alternative · multi-provider · OpenAI · Anthropic Claude · Google Gemini · DeepSeek · Ollama · vLLM · Claude Code · Cursor · MCP · Go single binary · AI agent · autonomous agent · agentic AI · multi-agent · shared brain · Memory Palace · RAG · brain-as-a-service · Flowork · 1 brain many bodies · P2P mesh · peer-to-peer · decentralized AI · offline AI · mesh network · CRDT · gossip protocol · ed25519 · BFT · anti-poisoning · sovereign AI · doomsday-proof · mDNS discovery</sub>
 
 </div>

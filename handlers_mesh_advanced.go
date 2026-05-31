@@ -184,6 +184,12 @@ func MeshToolManifestsHandler(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
 			return
 		}
+		// Section 18 phase 3: validate manifest content before storing — blocks
+		// malformed/oversized manifests and obvious execution-smuggling tokens.
+		if ok, reason := mesh.ValidateToolManifest(body.ManifestJSON); !ok {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": "manifest rejected: " + reason})
+			return
+		}
 		if err := mesh.UpsertToolManifest(db, body.ToolName, body.OriginPubkey, body.ManifestJSON, body.Signature); err != nil {
 			writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
 			return
@@ -332,6 +338,13 @@ func MeshLoraDeltasHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+			return
+		}
+		// Section 21 phase 3: validate delta metadata (scheme allowlist, size
+		// cap, signature) before store. Weight-apply stays deferred (no
+		// fine-tuning runtime) — see internal/mesh/lora.go ApplyLoraDelta.
+		if ok, reason := mesh.ValidateLoraDelta(body.ModelName, body.DeltaURI, body.DeltaSize, body.Signature); !ok {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": "lora delta rejected: " + reason})
 			return
 		}
 		_, err := db.Exec(

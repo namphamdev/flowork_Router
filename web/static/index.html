@@ -4685,7 +4685,10 @@ done &lt; my_knowledge.jsonl</pre>
       } catch (e) { div.innerHTML = '<span class="text-red-400">' + esc(e.message) + '</span>'; }
       finally { btn.textContent = orig; btn.disabled = false; }
     }
-    function esc(s){ return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+    // Full escape set (incl. quotes) — parity with _escHtml/escapeHtml/mcEsc.
+    // Was &<> only, which let a " break out of value="${esc(...)}" / title="${esc(...)}"
+    // attributes (attribute-injection XSS). Quote-escaping closes that vector.
+    function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
     // ── Settings: Backups card ──────────────────────────────────────────
     async function loadBackups() {

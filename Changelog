@@ -4,6 +4,93 @@
 
 ---
 
+## 2026-05-31 09:25 WIB — Mesh phase 3: close all 7 P2P gaps → "anti-kiamat" mesh functional
+
+Audit-driven follow-up: the mesh stack had real logic but key pieces weren't
+wired into the live path (notably the 9-layer anti-poisoning filter ran only via
+the manual test endpoint). All 7 gaps closed as new plug-and-play files; build +
+vet + test (32 ok / 0 fail) + `-race` CLEAN; verified on a running router with
+0 panic. New unit tests: `internal/mesh/mesh_phase3_test.go` (9 tests).
+
+- **feat(mesh/pipeline)** NEW `internal/mesh/pipeline.go` — `ProcessKnowledgePacket`
+  wires receive → 9-layer filter → near-dup → karma → inbox status. Now wired into
+  `MeshPacketReceiveHandler` for `knowledge` + `tool_share` packet types (was: raw
+  persist). Closes "filter not wired" — roadmap "wajib sebelum mesh public".
+- **feat(mesh/similarity)** NEW `internal/mesh/similarity.go` — dependency-free
+  trigram-Jaccard near-dup (Section 17 L7 "cosine-dedup") — no embedding model, no
+  network, offline-capable. Swappable via `SetSimilarityFunc` for future embeddings.
+- **feat(mesh/karma_gate)** NEW `internal/mesh/karma_gate.go` — `KarmaGate`
+  (discovery whitelist: peer karma ≤ 0.2 ignored) + `AutoBlockLowKarma`. Wired into
+  discovery in `main.go`. Closes Section 19 "karma threshold gates".
+- **feat(mesh/toolvalidate)** NEW `internal/mesh/toolvalidate.go` —
+  `ValidateToolManifest` (JSON-shape + 32KB cap + dangerous-token block) +
+  `IngestToolSharePacket`. Wired into the tool-manifest POST endpoint. Section 18.
+- **feat(mesh/crdt_sets)** NEW `internal/mesh/crdt_sets.go` — VectorClock (merge +
+  causal Compare), GSet, TwoPhaseSet + `MergeGSetTopic` anti-entropy over
+  mesh_crdt_state. Closes Section 16 "G-Set/2P-Set + vector clock".
+- **feat(mesh/lora)** NEW `internal/mesh/lora.go` — `ValidateLoraDelta`
+  (scheme-allowlist incl. file:// for sneakernet + size cap + signature) +
+  `VerifyDeltaChecksum` (sha256). `ApplyLoraDelta` returns `ErrLoraApplyUnavailable`
+  — HONEST deferral: transport+verify live, weight-apply needs fine-tuning runtime
+  (per roadmap CUT list). Wired validation into lora-deltas POST endpoint.
+- **docs(README)** Full marketing rewrite of the mesh story: new "🕸️ Sovereign
+  Mesh" section (capability table + ASCII flow + honest-status note), Features-table
+  row, Roadmap items marked done, tagline + SEO keywords expanded (P2P, CRDT,
+  gossip, ed25519, decentralized/offline AI, etc).
+- Runtime-verified live: tool validator rejects `rm -rf` (400) / accepts clean
+  (200); LoRA validator rejects `ftp://` (400) / accepts `https://` (200); 9-layer
+  filter rejects injection at L6 / passes clean+fresh knowledge. 0 panic.
+
+## 2026-05-30 17:10 WIB — Security audit: 10 bug fixes (GUI + backend), all tested
+
+Full file-by-file audit (6 parallel auditors over 70 root Go files + 39 internal
+packages + GUI + all 28 vendor executors). Inventory: `doc/AUDIT_INVENTORY.md`.
+Build + vet + test + `-race` CLEAN after fixes (31 packages ok, 0 fail). New test:
+`handlers_ssrf_guard_test.go`. Runtime-verified: router :2402 + agent :1987 boot
+clean (0 panic), 30-way concurrent localai burst all 200.
+
+### Batch 3 (infra/executors audit — re-run after power outage killed first pass)
+
+- **fix(localai/race)** handlers_llm_runtime.go (LOCKED): `localAIRuntimeRef` package
+  global lazy-init tanpa mutex → 2 request concurrent bisa race + orphan llama-server
+  subprocess. Tambah `localAIRuntimeMu sync.Mutex` ngunci nil-check + start/stop/status.
+- **fix(vertex/panic)** internal/executors/vertex.go (LOCKED): `endpoint()` bare
+  `.(string)` assertion di `publisherModel` → panic kalau absent/non-string. Ganti
+  comma-ok (empty → harmless 404 instead of crash request goroutine).
+- **fix(cursor/32-bit panic)** internal/executors/cursor_proto.go (LOCKED): frame length
+  `int(uint32)` bisa wrap negatif di build 32-bit → `make([]byte, neg)` panic dari
+  upstream hostile. Pakai uint64 math (relevan: mandate portable/multi-OS).
+
+### Batch 1 + 2 (auth/chat/mesh/brain audit)
+
+- **fix(gui/xss)** web/static/index.html: `esc()` cuma escape `&<>` — sekarang full
+  set (`&<>"'`) sejajar `_escHtml`/`escapeHtml`/`mcEsc`. Nutup attribute-injection
+  XSS di `value="${esc(...)}"` / `title="${esc(...)}"` (draft, tag, mcp catalog).
+- **fix(router/panic)** internal/router/dispatcher.go (LOCKED): combo Random strategy
+  `c.Models[int(UnixNano())%len]` bisa index negatif (32-bit/overflow) → panic crash
+  request goroutine. Pakai `uint64(...)`.
+- **fix(sec/ssrf)** handlers_mcp.go (LOCKED): MCP HTTP gateway (message/sse/list-tools)
+  fetch `srv.URL` tanpa validasi → SSRF baca cloud-metadata (169.254.169.254). Tambah
+  `blockMetadataURL` guard: blokir link-local/metadata, tetep izinin loopback/LAN.
+- **fix(sec/ssrf)** handlers_gaps.go (LOCKED): TTS voices + provider /models proxy fetch
+  operator BaseURL tanpa validasi → SSRF. Guard sama.
+- **fix(sec/oidc)** handlers_auth_oidc.go (LOCKED): id_token verification bisa di-skip
+  kalau IdP ngga advertise jwks_uri (auth-integrity hole) → id_token sekarang WAJIB
+  diverifikasi, login gagal kalau ngga bisa diverifikasi.
+- **fix(sec/oidc)** handlers_auth_oidc.go (LOCKED): pending-state TTL (10 min) di-stamp
+  tapi ngga pernah dicek → replay/CSRF window. Callback sekarang enforce `expiresAt`.
+- **fix(sec/at-rest)** internal/store/kvmisc.go (LOCKED): OAuth access/refresh/id token
+  disimpan plaintext di kv — sekarang AES-256-GCM (sejajar provider API key).
+  Backward-compat: `DecryptSecret` no-op untuk row plaintext lama.
+- **new** handlers_ssrf_guard.go (+ test): guard SSRF link-local/metadata.
+- **new** doc/AUDIT_INVENTORY.md: manifest file-per-file buat pelacakan audit.
+
+Catatan: 7 file ber-LOCKED header ke-sentuh (disetujui via instruksi audit "perbaiki
+semua bug"). False-positive yang DITOLAK: "data race resp" (read-read concurrent =
+bukan race); informational UTF-8 byte-truncation (data-quality, bukan crash).
+Pending: re-audit 9 package gap (caveman/clitools/cloudcode/executors/kiromodels/
+localai/rtk/services/updater) — agent mati pas listrik padam, lagi di-run ulang.
+
 ## 2026-05-30 22:50 WIB — Section 14-27 batch close → **Router roadmap CLOSED**
 
 Wrap-up batch — 14 sections closed dengan schema + minimal endpoint phase 1. Mesh stack (14-23) single-owner reality = schema only, real mesh logic defer phase 2 saat multi-host aktif. LLM/pricing/policy (24-27) full CRUD endpoint siap.

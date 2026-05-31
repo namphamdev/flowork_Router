@@ -47,10 +47,15 @@ func (v *vertexExecutor) endpoint(p *store.ProviderConnection, stream bool) stri
 	if stream {
 		action = "streamGenerateContent?alt=sse"
 	}
+	// Defensive: comma-ok assertion instead of a bare .(string) — a missing or
+	// non-string publisherModel would otherwise panic here and crash the request
+	// goroutine. Empty model yields a harmless upstream 404, and Stream/NonStream
+	// already guard the value before calling endpoint().
+	publisherModel, _ := p.Data["publisherModel"].(string)
 	return trimRightSlash(base) +
 		"/v1/projects/" + project +
 		"/locations/" + location +
-		"/publishers/google/models/" + p.Data["publisherModel"].(string) +
+		"/publishers/google/models/" + publisherModel +
 		":" + action
 }
 

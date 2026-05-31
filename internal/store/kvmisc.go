@@ -32,16 +32,35 @@ type OAuthTokenRecord struct {
 const oauthKVPrefix = "oauth:"
 
 func ListOAuthTokens(d *sql.DB) ([]OAuthTokenRecord, error) {
-	return kvList[OAuthTokenRecord](d, oauthKVPrefix)
+	ts, err := kvList[OAuthTokenRecord](d, oauthKVPrefix)
+	for i := range ts {
+		ts[i].AccessToken = DecryptSecret(ts[i].AccessToken)
+		ts[i].RefreshToken = DecryptSecret(ts[i].RefreshToken)
+		ts[i].IDToken = DecryptSecret(ts[i].IDToken)
+	}
+	return ts, err
 }
 
 func GetOAuthToken(d *sql.DB, provider string) (*OAuthTokenRecord, error) {
-	return kvGetByKey[OAuthTokenRecord](d, oauthKVPrefix+provider)
+	t, err := kvGetByKey[OAuthTokenRecord](d, oauthKVPrefix+provider)
+	if t != nil {
+		t.AccessToken = DecryptSecret(t.AccessToken)
+		t.RefreshToken = DecryptSecret(t.RefreshToken)
+		t.IDToken = DecryptSecret(t.IDToken)
+	}
+	return t, err
 }
 
 func UpsertOAuthToken(d *sql.DB, t *OAuthTokenRecord) error {
 	t.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
-	return kvUpsert(d, oauthKVPrefix+t.Provider, t)
+	// Encrypt bearer/refresh/id tokens at rest (AES-256-GCM, "enc:" prefix) to
+	// match the provider-API-key doctrine. EncryptSecret is idempotent + a no-op
+	// on empty strings, so pending records (data lives in Extra) are untouched.
+	rec := *t
+	rec.AccessToken = EncryptSecret(rec.AccessToken)
+	rec.RefreshToken = EncryptSecret(rec.RefreshToken)
+	rec.IDToken = EncryptSecret(rec.IDToken)
+	return kvUpsert(d, oauthKVPrefix+t.Provider, &rec)
 }
 
 func DeleteOAuthToken(d *sql.DB, provider string) error {

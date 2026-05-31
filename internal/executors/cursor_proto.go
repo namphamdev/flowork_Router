@@ -207,10 +207,15 @@ func parseConnectRPCFrame(buf []byte) *connectFrame {
 	if len(buf) < 5 {
 		return nil
 	}
-	length := int(binary.BigEndian.Uint32(buf[1:5]))
-	if len(buf) < 5+length {
+	// Use uint64 math for the length check: on 32-bit builds int(uint32) can wrap
+	// negative for values > 2^31, making `5+length` small/negative and the bounds
+	// check pass → make([]byte, negative) panics. The repo targets multi-OS incl.
+	// 32-bit, and the length comes from an attacker-controllable upstream frame.
+	length64 := uint64(binary.BigEndian.Uint32(buf[1:5]))
+	if uint64(len(buf)) < 5+length64 {
 		return nil
 	}
+	length := int(length64)
 	payload := make([]byte, length)
 	copy(payload, buf[5:5+length])
 	return &connectFrame{

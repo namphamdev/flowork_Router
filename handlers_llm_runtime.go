@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/flowork-os/flowork_Router/internal/localai"
 	"github.com/flowork-os/flowork_Router/internal/pricing"
@@ -80,7 +81,14 @@ func ChainRunHandler(w http.ResponseWriter, r *http.Request) {
 // Section 25: LocalAI runtime control
 // =============================================================================
 
-var localAIRuntimeRef *localai.Runtime
+var (
+	localAIRuntimeRef *localai.Runtime
+	// localAIRuntimeMu serializes the lazy-init + start/stop/status of the
+	// shared runtime. net/http runs one goroutine per request, so without this
+	// two concurrent POSTs could both see localAIRuntimeRef==nil, each build a
+	// *Runtime, and orphan one llama-server subprocess (data race on the ptr).
+	localAIRuntimeMu sync.Mutex
+)
 
 // LocalAIRuntimeHandler — POST {action: start|stop|status, model_name?, gguf_path?}
 func LocalAIRuntimeHandler(w http.ResponseWriter, r *http.Request) {
@@ -97,6 +105,8 @@ func LocalAIRuntimeHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
 		return
 	}
+	localAIRuntimeMu.Lock()
+	defer localAIRuntimeMu.Unlock()
 	if localAIRuntimeRef == nil {
 		localAIRuntimeRef = localai.NewRuntime("", 0)
 	}

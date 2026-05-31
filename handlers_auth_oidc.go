@@ -149,6 +149,16 @@ func authOIDCCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "state mismatch", http.StatusBadRequest)
 		return
 	}
+	// Enforce the 10-minute TTL stamped at init. Without this a stale
+	// state/PKCE/nonce lives until the next init of the same provider — a
+	// replay/CSRF window far beyond the documented 10 min.
+	if expStr, _ := extra["expiresAt"].(string); expStr != "" {
+		if exp, perr := time.Parse(time.RFC3339, expStr); perr == nil && time.Now().After(exp) {
+			_ = store.DeleteOAuthToken(d, "oidc:pending")
+			http.Error(w, "login state expired — please retry", http.StatusBadRequest)
+			return
+		}
+	}
 	tokenEndpoint, _ := extra["tokenEndpoint"].(string)
 	userinfoEndpoint, _ := extra["userinfoEndpoint"].(string)
 
@@ -187,7 +197,16 @@ func authOIDCCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	expectIssuer, _ := extra["issuer"].(string)
 	nonce, _ := extra["nonce"].(string)
 	var verifiedSubject string
-	if jwksURI != "" && tok.IDToken != "" {
+	if tok.IDToken != "" {
+		// An id_token was issued → it MUST be cryptographically verified
+		// (signature + iss + aud + exp + nonce). If the issuer advertised no
+		// jwks_uri we cannot verify it, so fail the login rather than silently
+		// downgrading to the unverified userinfo path (which also skipped the
+		// nonce/replay check) — that downgrade was an auth-integrity hole.
+		if jwksURI == "" {
+			http.Error(w, "id_token present but issuer advertised no jwks_uri — cannot verify", http.StatusUnauthorized)
+			return
+		}
 		claims, verr := verifyOIDCIDToken(ctx, jwksURI, tok.IDToken, expectIssuer, clientID, nonce)
 		if verr != nil {
 			http.Error(w, "id_token verification failed: "+verr.Error(), http.StatusUnauthorized)

@@ -65,6 +65,9 @@ func fetchProviderModels(ctx context.Context, baseURL, apiKey, format string) []
 		return nil
 	}
 	endpoint := strings.TrimRight(baseURL, "/") + "/models"
+	if _, verr := blockMetadataURL(ctx, endpoint); verr != nil {
+		return nil
+	}
 	cctx, cancel := context.WithTimeout(ctx, 8*time.Second)
 	defer cancel()
 	req, _ := http.NewRequestWithContext(cctx, http.MethodGet, endpoint, nil)
@@ -251,6 +254,11 @@ func v1IndexHandler(w http.ResponseWriter, r *http.Request) {
 func tryFetchVoicesUpstream(parentCtx context.Context, w http.ResponseWriter, endpoint, apiKey string) bool {
 	ctx, cancel := context.WithTimeout(parentCtx, 8*time.Second)
 	defer cancel()
+	// SSRF guard: block link-local/cloud-metadata targets (operator BaseURL is
+	// fetched and its body streamed back to the client). Loopback/LAN allowed.
+	if _, verr := blockMetadataURL(ctx, endpoint); verr != nil {
+		return false
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
 		return false

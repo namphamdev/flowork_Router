@@ -66,6 +66,29 @@ func MeshPacketReceiveHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{"error": perr.Error()})
 		return
 	}
+	// Type-aware intake. Knowledge packets MUST run the 9-layer anti-poisoning
+	// filter + near-dup + karma pipeline before anything trusts them (roadmap
+	// Section 20: "wajib sebelum mesh public"). Other types just persist for now.
+	switch pkt.PacketType {
+	case mesh.PacketTypeKnowledge:
+		kr := mesh.ProcessKnowledgePacket(db, pkt)
+		if kr.Status != mesh.StatusDropped {
+			_ = mesh.MarkProcessed(db, pkt.PacketID)
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"ok": true, "packet_id": pkt.PacketID, "processed": true,
+			"knowledge": kr,
+		})
+		return
+	case mesh.PacketTypeToolShare:
+		tr := mesh.IngestToolSharePacket(db, pkt)
+		_ = mesh.MarkProcessed(db, pkt.PacketID)
+		writeJSON(w, http.StatusOK, map[string]any{
+			"ok": true, "packet_id": pkt.PacketID, "processed": true,
+			"tool_share": tr,
+		})
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"ok": true, "packet_id": pkt.PacketID, "processed": false,
 	})
@@ -162,13 +185,20 @@ func MeshPacketsHandler(w http.ResponseWriter, r *http.Request) {
 		var packetID, origin, pkType, preview, signature, recv string
 		var ttl, hop, processed int
 		_ = rows.Scan(&id, &packetID, &origin, &pkType, &preview, &signature, &ttl, &hop, &recv, &processed)
+		// Guard the preview slice: a short/empty signature (NULL column or a
+		// manually-inserted row) would panic on signature[:16] and abort the
+		// request. Verified inserts produce 128-hex sigs, but don't assume it.
+		sigPrev := signature
+		if len(sigPrev) > 16 {
+			sigPrev = sigPrev[:16] + "…"
+		}
 		out = append(out, map[string]any{
 			"id":              id,
 			"packet_id":       packetID,
 			"origin_pubkey":   origin,
 			"packet_type":     pkType,
 			"payload_preview": preview,
-			"signature":       signature[:16] + "…",
+			"signature":       sigPrev,
 			"ttl":             ttl,
 			"hop_count":       hop,
 			"received_at":     recv,

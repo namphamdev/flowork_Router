@@ -92,6 +92,9 @@ func main() {
 		// multicast. Best-effort — kalau port busy → announce-only mode.
 		pubkeyBytes, _ := hex.DecodeString(id.PubKeyHex)
 		discovery := mesh.NewDiscovery(pubkeyBytes, 2402, version, d)
+		// Section 19: karma gate — ignore mDNS announces from peers whose trust
+		// score fell below the floor (auto-quarantine misbehaving hosts).
+		discovery.WhitelistCheck = mesh.KarmaGate(d)
 		if derr := discovery.Start(ctx); derr != nil {
 			log.Printf("WARN: mesh discovery: %v", derr)
 		}

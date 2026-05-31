@@ -591,7 +591,10 @@ func pickComboModel(c *store.Combo) string {
 		return c.Models[i]
 	case store.ComboStrategyRandom:
 		// Use time.Now nanos modulo as cheap PRNG (no crypto needed for routing).
-		return c.Models[int(time.Now().UnixNano())%len(c.Models)]
+		// uint64 conversion avoids a negative index: on 32-bit int builds (or any
+		// nanos value that overflows int) `int(x) % len` can be negative, which
+		// would panic with index-out-of-range and crash the request goroutine.
+		return c.Models[int(uint64(time.Now().UnixNano())%uint64(len(c.Models)))]
 	case store.ComboStrategyCostOptimal:
 		// Pick model yang harga input+output terendah (estimateCost as proxy).
 		bestModel := c.Models[0]
