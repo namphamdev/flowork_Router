@@ -160,6 +160,7 @@ Usage, cost and latency are logged for every call. One brain, many bodies, learn
 | 🩺 **Tunnel watchdog** | Background 60s health-probe of the active Cloudflare/Tailscale tunnel; flips dashboard state when it goes dark |
 | 🛠️ **`flow-cli` companion binary** | Stand-alone control binary — `status / providers / keys / settings / ui (interactive TUI) / tray / autostart` — no extra deps |
 | 📌 **Cross-OS autostart** | One-command login-time autostart: Linux `.desktop` · macOS `LaunchAgent` plist · Windows HKCU Run |
+| 🕸️ **Sovereign P2P mesh** | Leaderless peer-to-peer router network: ed25519 identity · zero-config mDNS discovery · signed packet transport · gossip propagation · 9-layer anti-poisoning filter · karma trust gating · CRDT replication · cross-host tool sharing. Internet-optional. [See Mesh →](#-sovereign-mesh--peer-to-peer-routers-that-survive-the-apocalypse) |
 
 ---
 
