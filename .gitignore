@@ -3,6 +3,9 @@ flow-router-bin.exe
 /flow_router
 *.log
 /data/
+# Local-only docs (kept on disk, untracked) — per owner request 2026-05-31
+Changelog
+roadmap.md
 # Local notes / private rules — never commit
 catatan_untuk_ai_external
 catatan
