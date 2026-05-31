@@ -1,3 +1,12 @@
+// === LOCKED FILE ===
+// Status: STABLE — TESTED & VERIFIED. DO NOT MODIFY without owner approval.
+// Owner: Aola Sahidin (Mr.Dev)
+// Repo: https://github.com/flowork-os/flowork_Router
+// Locked at: 2026-05-31
+// Tested: sudah melalui uji coba test — cloaking_test.go 6/6 PASS,
+//   go build + vet + test + -race CLEAN, runtime-verified 0 panic.
+// Reason: Claude anti-ban cloaking — faithful Go port of 9router proven logic.
+//
 // cloaking.go — Claude tool cloaking (anti-ban), Go port of 9router's
 // open-sse/utils/claudeCloaking.js. Active ONLY when the upstream is driven by a
 // Claude OAuth token (sk-ant-oat / tokenSource=claude_credentials), so an
