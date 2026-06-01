@@ -15,6 +15,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -108,6 +109,21 @@ func meshUpsertPeerHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "pubkey_hex required"})
 		return
 	}
+	
+	// FIX #6: Validate pubkey format (must be valid 64-char hex string)
+	if _, err := hex.DecodeString(body.PubKeyHex); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": "invalid pubkey_hex: must be 64-character hexadecimal string",
+		})
+		return
+	}
+	if len(body.PubKeyHex) != 64 {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": "invalid pubkey_hex: must be exactly 64 characters (32 bytes ed25519 key)",
+		})
+		return
+	}
+	
 	if err := mesh.UpsertPeer(db, body); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
 		return
@@ -131,6 +147,21 @@ func meshBlockHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "pubkey required"})
 		return
 	}
+	
+	// FIX #6: Validate pubkey format before using it
+	if _, err := hex.DecodeString(pubkey); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": "invalid pubkey: must be 64-character hexadecimal string",
+		})
+		return
+	}
+	if len(pubkey) != 64 {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": "invalid pubkey: must be exactly 64 characters",
+		})
+		return
+	}
+	
 	blocked := r.URL.Query().Get("blocked") == "1"
 	if err := mesh.SetBlocked(db, pubkey, blocked); err != nil {
 		writeJSON(w, http.StatusNotFound, map[string]any{"error": err.Error()})
