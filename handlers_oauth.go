@@ -12,12 +12,15 @@ package main
 import (
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -370,13 +373,29 @@ func oauthInitHandler(w http.ResponseWriter, r *http.Request, provider string) {
 	if body.ClientID == "" {
 		body.ClientID = "PLACEHOLDER_" + tpl.ClientIDEnv
 	}
+	// FIX #4: Construct redirect URI dynamically from request instead of hardcoding
 	if body.RedirectURI == "" {
-		body.RedirectURI = "http://127.0.0.1:2402/api/oauth/" + provider + "/callback"
+		scheme := os.Getenv("FLOW_ROUTER_SCHEME")
+		if scheme == "" {
+			scheme = "https"
+			if r.Header.Get("X-Forwarded-Proto") != "" {
+				scheme = r.Header.Get("X-Forwarded-Proto")
+			}
+		}
+		host := os.Getenv("FLOW_ROUTER_HOST")
+		if host == "" {
+			host = r.Host
+			if host == "" {
+				host = "127.0.0.1:2402" // Fallback
+			}
+		}
+		body.RedirectURI = scheme + "://" + host + "/api/oauth/" + provider + "/callback"
 	}
 	if body.Scope == "" {
 		body.Scope = tpl.DefaultScope
 	}
-	stateBytes := make([]byte, 16)
+	// FIX #2: Increase state entropy from 128 to 256 bits
+	stateBytes := make([]byte, 32)
 	_, _ = rand.Read(stateBytes)
 	state := hex.EncodeToString(stateBytes)
 	verifierBytes := make([]byte, 32)
@@ -440,7 +459,8 @@ func oauthCallbackHandler(w http.ResponseWriter, r *http.Request, provider strin
 	}
 	extra, _ := pending.Extra.(map[string]any)
 	storedState, _ := extra["state"].(string)
-	if extra == nil || !constantTimeEqualString(storedState, state) {
+	// FIX #1: Use crypto/subtle.ConstantTimeCompare instead of phantom function
+	if extra == nil || subtle.ConstantTimeCompare([]byte(storedState), []byte(state)) != 1 {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "state mismatch"})
 		return
 	}
