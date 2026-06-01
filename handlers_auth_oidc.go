@@ -12,12 +12,15 @@ package main
 import (
 	"context"
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -71,7 +74,16 @@ func oidcConfigFromSettings(s *store.Settings) (issuer, clientID, clientSecret, 
 		scopes = "openid profile email"
 	}
 	if redirectURI == "" {
-		redirectURI = "http://127.0.0.1:2402/api/auth/oidc/callback"
+		// FIX #4: Construct redirect URI from request instead of hardcoding
+		scheme := os.Getenv("FLOW_ROUTER_SCHEME")
+		if scheme == "" {
+			scheme = "https"
+		}
+		host := os.Getenv("FLOW_ROUTER_HOST")
+		if host == "" {
+			host = "127.0.0.1:2402" // Fallback
+		}
+		redirectURI = scheme + "://" + host + "/api/auth/oidc/callback"
 	}
 	return
 }
@@ -96,10 +108,11 @@ func authOIDCInitHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadGateway, map[string]any{"error": "discovery: " + err.Error()})
 		return
 	}
-	stateB := make([]byte, 16)
+	// FIX #3: Increase nonce entropy from 128 to 256 bits
+	stateB := make([]byte, 32)
 	_, _ = rand.Read(stateB)
 	state := hex.EncodeToString(stateB)
-	nonceB := make([]byte, 16)
+	nonceB := make([]byte, 32)
 	_, _ = rand.Read(nonceB)
 	nonce := hex.EncodeToString(nonceB)
 	// Stash pending state in oauthTokens kv
@@ -145,7 +158,8 @@ func authOIDCCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	extra, _ := pending.Extra.(map[string]any)
 	storedState, _ := extra["state"].(string)
-	if extra == nil || !constantTimeEqualString(storedState, state) {
+	// FIX #1: Use crypto/subtle.ConstantTimeCompare instead of phantom function
+	if extra == nil || subtle.ConstantTimeCompare([]byte(storedState), []byte(state)) != 1 {
 		http.Error(w, "state mismatch", http.StatusBadRequest)
 		return
 	}
@@ -317,4 +331,22 @@ func pathRequiresSession(p string) bool {
 		return false
 	}
 	return true
+}
+
+// getRedirectURIFromRequest constructs a proper redirect URI from the current request
+func getRedirectURIFromRequest(r *http.Request, path string) string {
+	scheme := "https"
+	if r.Header.Get("X-Forwarded-Proto") != "" {
+		scheme = r.Header.Get("X-Forwarded-Proto")
+	}
+	
+	host := r.Host
+	if host == "" {
+		host, _, _ = net.SplitHostPort(r.RemoteAddr)
+		if host == "" {
+			host = "127.0.0.1:2402"
+		}
+	}
+	
+	return scheme + "://" + host + path
 }
