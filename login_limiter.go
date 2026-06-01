@@ -89,6 +89,7 @@ func loginCheckLock(ip string) (bool, int) {
 // loginRecordFail increments the fail counter and, on threshold, sets the lock.
 // Returns (locked, retryAfterSeconds) AFTER the increment, so the caller can
 // emit a 429 + Retry-After when the threshold is just crossed.
+// FIX #5: Check if already locked before incrementing to prevent race condition
 func loginRecordFail(ip string) (bool, int) {
 	loginLockMu.Lock()
 	defer loginLockMu.Unlock()
@@ -97,14 +98,28 @@ func loginRecordFail(ip string) (bool, int) {
 		e = &loginLockEntry{}
 		loginLocks[ip] = e
 	}
+	
+	now := time.Now()
+	
+	// ✓ NEW: Check if ALREADY LOCKED before incrementing
+	// This prevents multiple concurrent threads from bypassing the lock
+	if !e.lockUntil.IsZero() && now.Before(e.lockUntil) {
+		remaining := int(e.lockUntil.Sub(now).Seconds())
+		if remaining < 1 {
+			remaining = 1
+		}
+		return true, remaining  // RETURN IMMEDIATELY if already locked
+	}
+	
+	// Otherwise increment fail counter
 	e.fails++
-	e.lastFailAt = time.Now()
+	e.lastFailAt = now
 	if e.fails >= loginMaxFailsBeforeLock {
 		idx := e.lockLevel
 		if idx >= len(loginLockSteps) {
 			idx = len(loginLockSteps) - 1
 		}
-		e.lockUntil = time.Now().Add(loginLockSteps[idx])
+		e.lockUntil = now.Add(loginLockSteps[idx])
 		e.lockLevel++
 		e.fails = 0
 		return true, int(loginLockSteps[idx].Seconds())
